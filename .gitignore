@@ -1,0 +1,27 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Node (if added later)
+node_modules/
+
+# Build
+dist/
+build/
+*.zip
+*.crx
+*.pem
+
+# Misc
+.env
+.env.local

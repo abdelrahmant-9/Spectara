@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <title>Smart Selenium Locator Generator</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="app" id="app">
+
+    <!-- ============ COMPACT (empty) STATE ============ -->
+    <section class="compact" id="compactView">
+      <div class="hero">
+        <div class="hero-mark">
+          <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+            <defs>
+              <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#0a84ff"/>
+                <stop offset="100%" stop-color="#bf5af2"/>
+              </linearGradient>
+            </defs>
+            <circle cx="10" cy="10" r="6.5" fill="none" stroke="url(#g1)" stroke-width="2"/>
+            <line x1="14.5" y1="14.5" x2="20" y2="20" stroke="url(#g1)" stroke-width="2.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h1>Smart Selenium</h1>
+        <p>Locator Generator · v1.0</p>
+      </div>
+
+      <button id="startBtnCompact" class="pill-btn pill-primary">
+        <span class="pill-icon">▶</span>
+        <span>Start Inspect</span>
+      </button>
+
+      <p class="muted-hint">
+        Click any element on a page. Get locators + Java instantly.
+      </p>
+
+      <div class="kbd-row">
+        <span class="kbd">ALT</span><span class="kbd-label">exact node</span>
+        <span class="kbd">ESC</span><span class="kbd-label">cancel</span>
+      </div>
+    </section>
+
+    <!-- ============ EXPANDED (result) STATE ============ -->
+    <section class="expanded hidden" id="expandedView">
+      <header class="nav-bar">
+        <div class="nav-title">
+          <div class="nav-mark"></div>
+          <div>
+            <h2>Smart Selenium</h2>
+            <span class="status-line" id="statusLine">
+              <span class="dot dot-idle" id="statusDot"></span>
+              <span id="statusText">Idle</span>
+            </span>
+          </div>
+        </div>
+        <div class="nav-actions">
+          <button id="clearBtn" class="icon-btn" title="Clear history" aria-label="Clear">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          </button>
+          <button id="toggleTheme" class="icon-btn" title="Toggle theme" aria-label="Theme">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="control-bar">
+        <button id="startBtn" class="pill-btn pill-primary">
+          <span class="pill-icon">▶</span> Start Inspect
+        </button>
+        <button id="stopBtn" class="pill-btn pill-danger" disabled>
+          <span class="pill-icon">■</span> Stop
+        </button>
+      </div>
+
+      <p class="hint" id="hint">Last capture below. Press <b>Start Inspect</b> to capture a new element.</p>
+
+      <main class="results">
+        <div class="seg-tabs" role="tablist">
+          <button class="seg-tab active" data-tab="locators" role="tab">Locators</button>
+          <button class="seg-tab" data-tab="java" role="tab">Java</button>
+          <button class="seg-tab" data-tab="pom" role="tab">POM</button>
+          <button class="seg-tab" data-tab="meta" role="tab">Element</button>
+        </div>
+
+        <!-- Locators -->
+        <div class="tab-panel active" data-panel="locators">
+          <div class="card best">
+            <div class="card-head">
+              <span class="badge badge-best">Best</span>
+              <button class="copy-btn" data-copy="locator-best">Copy</button>
+            </div>
+            <pre class="code" id="locator-best">—</pre>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><span class="badge badge-id">ID</span><button class="copy-btn" data-copy="locator-id">Copy</button></div>
+            <pre class="code" id="locator-id">—</pre>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="badge badge-name">Name</span><button class="copy-btn" data-copy="locator-name">Copy</button></div>
+            <pre class="code" id="locator-name">—</pre>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="badge badge-css">CSS</span><button class="copy-btn" data-copy="locator-css">Copy</button></div>
+            <pre class="code" id="locator-css">—</pre>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="badge badge-xpath">XPath</span><button class="copy-btn" data-copy="locator-xpath">Copy</button></div>
+            <pre class="code" id="locator-xpath">—</pre>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="badge badge-xpath">Rel XPath</span><button class="copy-btn" data-copy="locator-rxpath">Copy</button></div>
+            <pre class="code" id="locator-rxpath">—</pre>
+          </div>
+        </div>
+
+        <!-- Java -->
+        <div class="tab-panel" data-panel="java">
+          <div class="card">
+            <div class="card-head"><span class="badge badge-java">Selenium Java</span><button class="copy-btn" data-copy="java-code">Copy</button></div>
+            <pre class="code" id="java-code">—</pre>
+          </div>
+        </div>
+
+        <!-- POM -->
+        <div class="tab-panel" data-panel="pom">
+          <div class="card">
+            <div class="card-head"><span class="badge badge-pom">Page Object Model</span><button class="copy-btn" data-copy="pom-code">Copy</button></div>
+            <pre class="code" id="pom-code">—</pre>
+          </div>
+        </div>
+
+        <!-- Meta -->
+        <div class="tab-panel" data-panel="meta">
+          <div class="card">
+            <div class="card-head"><span class="badge">Element Info</span></div>
+            <table class="meta-table">
+              <tbody>
+                <tr><td>Tag</td><td id="meta-tag">—</td></tr>
+                <tr><td>ID</td><td id="meta-id">—</td></tr>
+                <tr><td>Name</td><td id="meta-name">—</td></tr>
+                <tr><td>Class</td><td id="meta-class">—</td></tr>
+                <tr><td>Type</td><td id="meta-type">—</td></tr>
+                <tr><td>Text</td><td id="meta-text">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </section>
+
+    <div class="toast" id="toast">Copied!</div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -22,6 +22,7 @@
   let panel = null;
   let inspectMode = "single"; // "single" | "multi"
   let captureCount = 0;
+  let paused = false;
 
   /* ---------- Styles ---------- */
   function injectStyle() {
@@ -57,6 +58,10 @@
       html.smart-locator-inspect, html.smart-locator-inspect * {
         cursor: crosshair !important;
       }
+      html.smart-locator-paused, html.smart-locator-paused * {
+        cursor: auto !important;
+      }
+      html.smart-locator-paused #${OVERLAY_ID} { display: none !important; }
       #${PANEL_ID} {
         position: fixed;
         top: 16px;
@@ -108,6 +113,8 @@
       #${PANEL_ID} button:hover { background: rgba(255,255,255,0.18); }
       #${PANEL_ID} button.__sl_stop { background: rgba(255,69,58,0.85); border-color: rgba(255,69,58,0.6); }
       #${PANEL_ID} button.__sl_stop:hover { background: rgba(255,69,58,1); }
+      #${PANEL_ID} button.__sl_pause.active { background: rgba(255,159,10,0.85); border-color: rgba(255,159,10,0.6); }
+      #${PANEL_ID} button.__sl_pause.active:hover { background: rgba(255,159,10,1); }
     `;
     document.documentElement.appendChild(style);
   }
@@ -122,8 +129,9 @@
       <div class="__sl_txt">
         <span class="__sl_mode">${modeLabel}</span>
         <span class="__sl_count" style="display:none"></span>
-        <div class="__sl_hint">Click element · ALT exact · ESC cancel</div>
+        <div class="__sl_hint">Click · ALT exact · P pause · ESC cancel</div>
       </div>
+      <button class="__sl_pause" type="button" title="Pause inspect (P) — let you open menus / hover popups">Pause</button>
       <button class="__sl_stop" type="button">${inspectMode === "multi" ? "Done" : "Stop"}</button>
     `;
     document.documentElement.appendChild(panel);
@@ -132,6 +140,12 @@
       e.preventDefault();
       e.stopPropagation();
       stopInspect(true);
+    }, true);
+    const pauseBtn = panel.querySelector(".__sl_pause");
+    pauseBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      togglePause();
     }, true);
     panel.addEventListener("click", (e) => { e.stopPropagation(); }, true);
     panel.addEventListener("mouseover", (e) => { e.stopPropagation(); }, true);
@@ -144,6 +158,27 @@
     if (c) {
       c.textContent = ` · ${captureCount} captured`;
       c.style.display = "inline";
+    }
+  }
+
+  function togglePause() {
+    paused = !paused;
+    document.documentElement.classList.toggle("smart-locator-paused", paused);
+    document.documentElement.classList.toggle("smart-locator-inspect", inspecting && !paused);
+    if (panel) {
+      const btn = panel.querySelector(".__sl_pause");
+      const mode = panel.querySelector(".__sl_mode");
+      const hint = panel.querySelector(".__sl_hint");
+      if (btn) {
+        btn.textContent = paused ? "Resume" : "Pause";
+        btn.classList.toggle("active", paused);
+      }
+      if (mode) mode.textContent = paused
+        ? "Paused · interact freely"
+        : (inspectMode === "multi" ? "Multi mode" : "Inspect mode");
+      if (hint) hint.textContent = paused
+        ? "Open menus / popups normally · P to resume"
+        : "Click · ALT exact · P pause · ESC cancel";
     }
   }
 
@@ -395,7 +430,7 @@
 
   /* ---------- Event handlers ---------- */
   function onMouseOver(e) {
-    if (!inspecting) return;
+    if (!inspecting || paused) return;
     const raw = e.target;
     if (!raw) return;
     if (raw.id === OVERLAY_ID || raw.closest(`#${OVERLAY_ID}`)) return;
@@ -406,19 +441,23 @@
   }
 
   function onMouseMove(e) {
-    if (!inspecting || !lastHovered) return;
+    if (!inspecting || paused || !lastHovered) return;
     moveOverlayTo(lastHovered, false);
   }
 
   function onClick(e) {
     if (!inspecting) return;
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
 
     const raw = e.target;
     if (!raw) return;
     if (raw.id === PANEL_ID || raw.closest(`#${PANEL_ID}`)) return;
+
+    // Paused: let click pass through to the page (open menus, etc.)
+    if (paused) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
     const t = e.altKey ? raw : promoteTarget(raw);
 
     try {
@@ -451,7 +490,10 @@
   }
 
   function blockEvent(e) {
-    if (!inspecting) return;
+    if (!inspecting || paused) return;
+    // Don't block events on our floating panel
+    const t = e.target;
+    if (t && (t.id === PANEL_ID || (t.closest && t.closest(`#${PANEL_ID}`)))) return;
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
@@ -461,6 +503,13 @@
     if (!inspecting) return;
     if (e.key === "Escape") {
       stopInspect(true);
+    } else if (e.key === "p" || e.key === "P") {
+      // Don't pause while typing in a text field
+      const a = document.activeElement;
+      const tag = a && a.tagName ? a.tagName.toLowerCase() : "";
+      if (tag === "input" || tag === "textarea" || (a && a.isContentEditable)) return;
+      e.preventDefault();
+      togglePause();
     }
   }
 
@@ -484,7 +533,9 @@
   function stopInspect(notify = true) {
     if (!inspecting && !notify) return;
     inspecting = false;
+    paused = false;
     document.documentElement.classList.remove("smart-locator-inspect");
+    document.documentElement.classList.remove("smart-locator-paused");
 
     document.removeEventListener("mouseover", onMouseOver, true);
     document.removeEventListener("mousemove", onMouseMove, true);

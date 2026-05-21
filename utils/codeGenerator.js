@@ -162,6 +162,145 @@
     ].join("\n");
   }
 
+  /**
+   * Build a single POM class from multiple captures.
+   * captures: [{ element, locators, best, isList, listLocator }, ...]
+   */
+  function pomClassMulti(captures) {
+    if (!captures || !captures.length) return "// No elements captured yet";
+    const first = captures[0];
+    const className = derivePageName(first.element);
+
+    const seenNames = new Map();
+    const enriched = captures.map((c) => {
+      let name = variableName(c.element);
+      if (seenNames.has(name)) {
+        const n = seenNames.get(name) + 1;
+        seenNames.set(name, n);
+        name = `${name}${n}`;
+      } else {
+        seenNames.set(name, 1);
+      }
+      return { ...c, fieldName: name };
+    });
+
+    const fieldLines = enriched.map((c) => {
+      const fn = c.fieldName;
+      if (c.isList && c.listLocator) {
+        return `    private final By ${fn} = ${byLiteral(c.listLocator.type, c.listLocator.value)};`;
+      }
+      const best = c.best;
+      if (!best || !best.value) return `    // ${fn}: no locator`;
+      return `    private final By ${fn} = ${byLiteral(best.type, best.value)};`;
+    });
+
+    const methodBlocks = enriched.map((c) => pomActionFor(c));
+
+    return [
+      `import java.util.List;`,
+      `import org.openqa.selenium.By;`,
+      `import org.openqa.selenium.WebDriver;`,
+      `import org.openqa.selenium.WebElement;`,
+      `import org.openqa.selenium.support.ui.Select;`,
+      ``,
+      `public class ${className} {`,
+      ``,
+      `    private final WebDriver driver;`,
+      ``,
+      `    public ${className}(WebDriver driver) {`,
+      `        this.driver = driver;`,
+      `    }`,
+      ``,
+      fieldLines.join("\n"),
+      ``,
+      methodBlocks.join("\n\n"),
+      `}`,
+    ].join("\n");
+  }
+
+  function byLiteral(type, value) {
+    const safe = escapeJava(value);
+    switch (type) {
+      case "id":          return `By.id("${safe}")`;
+      case "name":        return `By.name("${safe}")`;
+      case "cssSelector": return `By.cssSelector("${safe}")`;
+      case "className":   return `By.className("${safe}")`;
+      case "xpath":       return `By.xpath("${safe}")`;
+      case "linkText":    return `By.linkText("${safe}")`;
+      default:            return `By.cssSelector("${safe}")`;
+    }
+  }
+
+  function pomActionFor(c) {
+    const fn = c.fieldName;
+    const cap0 = cap(fn);
+    const tag = (c.element.tag || "").toLowerCase();
+
+    if (c.isList) {
+      return [
+        `    public List<WebElement> get${cap0}() {`,
+        `        return driver.findElements(${fn});`,
+        `    }`,
+        ``,
+        `    public int ${fn}Count() {`,
+        `        return driver.findElements(${fn}).size();`,
+        `    }`,
+        ``,
+        `    public WebElement get${cap0}At(int index) {`,
+        `        return driver.findElements(${fn}).get(index);`,
+        `    }`,
+      ].join("\n");
+    }
+
+    if (tag === "input" || tag === "textarea") {
+      return [
+        `    public void set${cap0}(String value) {`,
+        `        WebElement el = driver.findElement(${fn});`,
+        `        el.clear();`,
+        `        el.sendKeys(value);`,
+        `    }`,
+        ``,
+        `    public String get${cap0}Value() {`,
+        `        return driver.findElement(${fn}).getAttribute("value");`,
+        `    }`,
+      ].join("\n");
+    }
+    if (tag === "select") {
+      return [
+        `    public void select${cap0}(String visibleText) {`,
+        `        new Select(driver.findElement(${fn})).selectByVisibleText(visibleText);`,
+        `    }`,
+      ].join("\n");
+    }
+    return [
+      `    public void click${cap0}() {`,
+      `        driver.findElement(${fn}).click();`,
+      `    }`,
+      ``,
+      `    public boolean is${cap0}Displayed() {`,
+      `        return driver.findElement(${fn}).isDisplayed();`,
+      `    }`,
+    ].join("\n");
+  }
+
+  /**
+   * Java snippet for collection (List<WebElement>).
+   */
+  function javaListSnippet(listLocator, element) {
+    if (!listLocator || !listLocator.value) return "// No list locator";
+    const varBase = variableName(element).replace(/(Button|Input|Link|Item|Element|Row|Cell)$/, "");
+    const varName = varBase + "Items";
+    const call = byCall(listLocator.type, listLocator.value);
+    return [
+      `// Collection capture — siblings detected`,
+      `List<WebElement> ${varName} = driver.findElements(${call});`,
+      `System.out.println("Count: " + ${varName}.size());`,
+      `for (WebElement item : ${varName}) {`,
+      `    System.out.println(item.getText());`,
+      `}`,
+    ].join("\n");
+  }
+
   function derivePageName(element) {
     const host = (location && location.hostname) || "Page";
     const path = (location && location.pathname) || "";
@@ -183,5 +322,11 @@
   }
 
   window.SmartLocator = window.SmartLocator || {};
-  window.SmartLocator.code = { javaSnippet, pomClass, variableName };
+  window.SmartLocator.code = {
+    javaSnippet,
+    javaListSnippet,
+    pomClass,
+    pomClassMulti,
+    variableName,
+  };
 })();

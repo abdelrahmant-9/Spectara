@@ -27,13 +27,19 @@
         <p>Locator Generator · v1.0</p>
       </div>
 
+      <div class="seg-tabs" id="modeTabsCompact" role="tablist" style="margin: 6px 0 4px;">
+        <button class="seg-tab active" data-mode="single" role="tab">Single</button>
+        <button class="seg-tab" data-mode="multi" role="tab">Multi-capture</button>
+      </div>
+
       <button id="startBtnCompact" class="pill-btn pill-primary">
         <span class="pill-icon">▶</span>
         <span>Start Inspect</span>
       </button>
 
       <p class="muted-hint">
-        Click any element on a page. Get locators + Java instantly.
+        Click any element on a page. Get locators + Java instantly.<br>
+        <span class="muted-sub">Multi-capture: keep clicking to build a full POM.</span>
       </p>
 
       <div class="kbd-row">
@@ -65,13 +71,27 @@
         </div>
       </header>
 
+      <div class="seg-tabs" id="modeTabsExpanded" role="tablist" style="margin: 10px 14px 0;">
+        <button class="seg-tab active" data-mode="single" role="tab">Single</button>
+        <button class="seg-tab" data-mode="multi" role="tab">Multi-capture</button>
+      </div>
+
       <div class="control-bar">
         <button id="startBtn" class="pill-btn pill-primary">
-          <span class="pill-icon">▶</span> Start Inspect
+          <span class="pill-icon">▶</span> <span id="startBtnLabel">Start Inspect</span>
         </button>
         <button id="stopBtn" class="pill-btn pill-danger" disabled>
           <span class="pill-icon">■</span> Stop
         </button>
+      </div>
+
+      <!-- Capture list (multi mode) -->
+      <div class="captures-strip hidden" id="capturesStrip">
+        <div class="captures-head">
+          <span class="captures-count" id="capturesCount">0 captured</span>
+          <button class="link-btn" id="clearCapturesBtn">Clear all</button>
+        </div>
+        <ul class="captures-list" id="capturesList"></ul>
       </div>
 
       <p class="hint" id="hint">Last capture below. Press <b>Start Inspect</b> to capture a new element.</p>
@@ -86,6 +106,14 @@
 
         <!-- Locators -->
         <div class="tab-panel active" data-panel="locators">
+          <div class="card list-card hidden" id="listCard">
+            <div class="card-head">
+              <span class="badge badge-list">List · <span id="listCount">0</span> items</span>
+              <button class="copy-btn" data-copy="locator-list">Copy</button>
+            </div>
+            <pre class="code" id="locator-list">—</pre>
+          </div>
+
           <div class="card best">
             <div class="card-head">
               <span class="badge badge-best">Best</span>
@@ -118,6 +146,10 @@
 
         <!-- Java -->
         <div class="tab-panel" data-panel="java">
+          <div class="card list-card hidden" id="javaListCard">
+            <div class="card-head"><span class="badge badge-list">Java · List&lt;WebElement&gt;</span><button class="copy-btn" data-copy="java-list-code">Copy</button></div>
+            <pre class="code" id="java-list-code">—</pre>
+          </div>
           <div class="card">
             <div class="card-head"><span class="badge badge-java">Selenium Java</span><button class="copy-btn" data-copy="java-code">Copy</button></div>
             <pre class="code" id="java-code">—</pre>

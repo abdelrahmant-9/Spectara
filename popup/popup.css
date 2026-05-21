@@ -461,6 +461,105 @@ body {
   transform: translateX(-50%) translateY(0);
 }
 
+/* =================================================
+   Multi-capture: captures strip
+   ================================================= */
+.captures-strip {
+  margin: 8px 14px 0;
+  padding: 8px 10px;
+  background: var(--surface-inset);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  max-height: 130px;
+  overflow: auto;
+}
+.captures-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.captures-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.link-btn {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.link-btn:hover { text-decoration: underline; }
+
+.captures-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.captures-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 5px 8px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.captures-list li:hover { background: var(--surface-elev); border-color: var(--accent-soft); }
+.captures-list li.active { border-color: var(--accent); background: var(--accent-soft); }
+.captures-list .cap-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.captures-list .cap-list-tag {
+  background: rgba(255,159,10,0.18);
+  color: var(--orange);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.captures-list .cap-remove {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.captures-list .cap-remove:hover { color: var(--danger); background: rgba(255,69,58,0.12); }
+
+.badge-list {
+  color: var(--orange);
+  border-color: color-mix(in srgb, var(--orange) 50%, transparent);
+}
+.list-card { border-color: color-mix(in srgb, var(--orange) 45%, var(--hairline)); }
+
+.muted-sub {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
 /* Fallback for color-mix (older browsers) — same look in modern Chrome */
 @supports not (color: color-mix(in srgb, red, blue)) {
   .badge-id    { border-color: rgba(48,209,88,0.4); }

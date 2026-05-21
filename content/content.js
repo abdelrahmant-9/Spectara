@@ -20,6 +20,8 @@
   let lastHovered = null;
   let overlay = null;
   let panel = null;
+  let inspectMode = "single"; // "single" | "multi"
+  let captureCount = 0;
 
   /* ---------- Styles ---------- */
   function injectStyle() {
@@ -90,7 +92,9 @@
         50%     { box-shadow: 0 0 0 7px rgba(48,209,88,0.08); }
       }
       #${PANEL_ID} .__sl_txt { flex: 1; font-weight: 500; }
-      #${PANEL_ID} .__sl_hint { font-size: 11px; color: rgba(245,245,247,0.55); font-weight: 400; }
+      #${PANEL_ID} .__sl_hint { font-size: 11px; color: rgba(245,245,247,0.55); font-weight: 400; margin-top: 1px; }
+      #${PANEL_ID} .__sl_mode { font-weight: 600; }
+      #${PANEL_ID} .__sl_count { font-size: 11px; color: #0a84ff; font-weight: 600; }
       #${PANEL_ID} button {
         background: rgba(255,255,255,0.10);
         border: 1px solid rgba(255,255,255,0.10);
@@ -112,10 +116,15 @@
     if (panel) return panel;
     panel = document.createElement("div");
     panel.id = PANEL_ID;
+    const modeLabel = inspectMode === "multi" ? "Multi mode" : "Inspect mode";
     panel.innerHTML = `
       <span class="__sl_dot"></span>
-      <div class="__sl_txt">Inspect mode<div class="__sl_hint">Click element · ALT exact · ESC cancel</div></div>
-      <button class="__sl_stop" type="button">Stop</button>
+      <div class="__sl_txt">
+        <span class="__sl_mode">${modeLabel}</span>
+        <span class="__sl_count" style="display:none"></span>
+        <div class="__sl_hint">Click element · ALT exact · ESC cancel</div>
+      </div>
+      <button class="__sl_stop" type="button">${inspectMode === "multi" ? "Done" : "Stop"}</button>
     `;
     document.documentElement.appendChild(panel);
     const stopBtn = panel.querySelector(".__sl_stop");
@@ -124,10 +133,18 @@
       e.stopPropagation();
       stopInspect(true);
     }, true);
-    // Prevent panel clicks from triggering capture
     panel.addEventListener("click", (e) => { e.stopPropagation(); }, true);
     panel.addEventListener("mouseover", (e) => { e.stopPropagation(); }, true);
     return panel;
+  }
+
+  function updatePanelCounter() {
+    if (!panel || inspectMode !== "multi") return;
+    const c = panel.querySelector(".__sl_count");
+    if (c) {
+      c.textContent = ` · ${captureCount} captured`;
+      c.style.display = "inline";
+    }
   }
 
   function removePanel() {
@@ -271,14 +288,91 @@
     };
   }
 
+  /**
+   * Detect if clicked element is part of a sibling list/collection.
+   * Returns { isList: bool, count, listLocator: {type,value}, javaListSnippet }
+   */
+  function detectList(el) {
+    if (!el || !el.parentElement) return { isList: false };
+    const parent = el.parentElement;
+    const tag = el.tagName;
+    const cls = (el.getAttribute("class") || "").trim();
+
+    // Strategy 1: same-tag siblings with same class
+    const tagSibs = Array.from(parent.children).filter((c) => c.tagName === tag);
+    if (tagSibs.length < 2) return { isList: false };
+
+    let listLocator = null;
+    let count = tagSibs.length;
+
+    // Try class-based collection
+    if (cls) {
+      const tokens = cls.split(/\s+/).filter((c) => c && !looksDynamicLocal(c));
+      if (tokens.length) {
+        const tagL = tag.toLowerCase();
+        const sel = tagL + tokens.map((t) => "." + cssEscape(t)).join("");
+        try {
+          const matches = document.querySelectorAll(sel);
+          if (matches.length >= 2 && matches.length === count) {
+            listLocator = { type: "cssSelector", value: sel };
+            count = matches.length;
+          }
+        } catch (_) {}
+      }
+    }
+
+    // Fallback: parent + tag selector
+    if (!listLocator) {
+      const parentSel = parentSelector(parent);
+      if (parentSel) {
+        const sel = `${parentSel} > ${tag.toLowerCase()}`;
+        try {
+          const matches = document.querySelectorAll(sel);
+          if (matches.length >= 2) {
+            listLocator = { type: "cssSelector", value: sel };
+            count = matches.length;
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (!listLocator) return { isList: false };
+
+    return { isList: true, count, listLocator };
+  }
+
+  function parentSelector(p) {
+    if (!p || p.nodeType !== 1) return "";
+    if (p.id && !looksDynamicLocal(p.id)) return `#${cssEscape(p.id)}`;
+    const cls = (p.getAttribute("class") || "").trim();
+    if (cls) {
+      const tokens = cls.split(/\s+/).filter((c) => c && !looksDynamicLocal(c));
+      if (tokens.length) return p.tagName.toLowerCase() + "." + cssEscape(tokens[0]);
+    }
+    const dt = p.getAttribute("data-testid") || p.getAttribute("data-test");
+    if (dt && !looksDynamicLocal(dt)) return `${p.tagName.toLowerCase()}[data-testid="${dt}"]`;
+    return "";
+  }
+
+  function cssEscape(v) {
+    if (window.CSS && CSS.escape) return CSS.escape(v);
+    return String(v).replace(/([^a-zA-Z0-9_\-])/g, "\\$1");
+  }
+
   function buildPayload(el) {
     const element = extractElement(el);
     const locators = buildLocators(el);
     const best = (window.SmartLocator?.priority?.pickBest)
       ? window.SmartLocator.priority.pickBest(locators)
       : { type: "cssSelector", value: locators.css };
+
+    const listInfo = detectList(el);
+
     const javaCode = window.SmartLocator?.code?.javaSnippet
       ? window.SmartLocator.code.javaSnippet(best, element)
+      : "";
+    const javaListCode = (listInfo.isList && window.SmartLocator?.code?.javaListSnippet)
+      ? window.SmartLocator.code.javaListSnippet(listInfo.listLocator, element)
       : "";
     const pomCode = window.SmartLocator?.code?.pomClass
       ? window.SmartLocator.code.pomClass(element, locators)
@@ -290,7 +384,11 @@
       element,
       locators,
       best,
+      isList: listInfo.isList,
+      listLocator: listInfo.listLocator || null,
+      listCount: listInfo.count || 0,
       javaCode,
+      javaListCode,
       pomCode,
     };
   }
@@ -328,12 +426,28 @@
       const payload = buildPayload(t);
       payload.promoted = (t !== raw);
       payload.originalTag = raw.tagName ? raw.tagName.toLowerCase() : "";
+      payload.mode = inspectMode;
       chrome.runtime.sendMessage({ type: "ELEMENT_CAPTURED", payload });
+      captureCount++;
+      updatePanelCounter();
     } catch (err) {
       console.error("[SmartLocator] capture failed", err);
     }
 
-    stopInspect(false);
+    if (inspectMode === "single") {
+      stopInspect(false);
+    } else {
+      // Multi mode: keep inspecting, flash overlay green briefly
+      setTimeout(() => {
+        if (panel) {
+          const flash = panel.querySelector(".__sl_dot");
+          if (flash) {
+            flash.style.background = "#0a84ff";
+            setTimeout(() => { flash.style.background = "#30d158"; }, 300);
+          }
+        }
+      }, 0);
+    }
   }
 
   function blockEvent(e) {
@@ -392,7 +506,13 @@
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (!msg || !msg.type) return;
     if (msg.type === "PING") { sendResponse({ ok: true }); return true; }
-    if (msg.type === "START_INSPECT") { startInspect(); sendResponse({ ok: true }); return true; }
-    if (msg.type === "STOP_INSPECT")  { stopInspect(true); sendResponse({ ok: true }); return true; }
+    if (msg.type === "START_INSPECT") {
+      inspectMode = msg.mode === "multi" ? "multi" : "single";
+      captureCount = 0;
+      startInspect();
+      sendResponse({ ok: true });
+      return true;
+    }
+    if (msg.type === "STOP_INSPECT") { stopInspect(true); sendResponse({ ok: true }); return true; }
   });
 })();

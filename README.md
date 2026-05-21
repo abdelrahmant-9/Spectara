@@ -24,7 +24,7 @@ Writing locators is the most thankless part of test automation. You inherit a fl
 
 ## Features
 
-### Core (v1.0)
+### Core (v1.2)
 
 - **One-click capture** — click any element, get all five locator types
 - **Smart locator ranking** — automatically picks the most stable locator (skips dynamic IDs, framework hashes, random digits)
@@ -32,16 +32,20 @@ Writing locators is the most thankless part of test automation. You inherit a fl
 - **Five locator types** — ID, Name, CSS Selector, Absolute XPath, Relative XPath
 - **Selenium Java snippet** — `WebElement … driver.findElement(...)` with smart variable naming (`emailInput`, `loginButton`)
 - **Page Object Model** — full POM class generated from element + URL slug
-- **In-page floating panel** — Stop button always visible while inspecting
+- **Multi-element capture mode** — keep clicking to build a full POM in a single session, with a live capture list (per-item remove, click-to-view)
+- **List / collection detection** — click any item in a repeated list (table rows, menu items, product cards) and the extension auto-generates a `List<WebElement>` locator plus iteration snippet
+- **Combined POM** — multi-capture rebuilds one POM class with all fields + actions on every click; list captures get `getXxx()`, `xxxCount()`, `getXxxAt(int)` helpers
+- **Pause mode (P key)** — temporarily disable inspect to open hover-triggered popups, dropdowns, tooltips, accordions, modals; resume to capture items inside
+- **In-page floating panel** — Pause / Stop buttons always visible while inspecting, live capture counter in Multi mode
 - **macOS Tahoe-inspired UI** — liquid glass, vibrant accent, SF Pro typography, dark + light themes
+- **Compact + expanded popup states** — minimal hero when there's no history, full UI once you've captured
 - **One-click copy** on every locator and snippet
-- **Persistent history** — last capture restored when popup reopens
-- **Keyboard shortcuts** — `ALT` for exact node, `ESC` to cancel inspect
+- **Persistent history** — captures restored when popup reopens
+- **Keyboard shortcuts** — `ALT` for exact node, `P` to pause, `ESC` to cancel inspect
 
 ### Roadmap (v2.0)
 
 - [ ] iframe + Shadow DOM traversal
-- [ ] Multi-element capture (build POM from multiple clicks)
 - [ ] Locator validation (count matches on the page)
 - [ ] Export full POM as `.java` file download
 - [ ] Playwright + Cypress code generators
@@ -70,21 +74,54 @@ Writing locators is the most thankless part of test automation. You inherit a fl
 
 ## Usage
 
-### Quick flow
+### Quick flow — single element
 
 1. Open any website
-2. Click the extension icon → press **Start Inspect**
-3. The popup closes automatically and a floating panel appears on the page
-4. Hover any element — blue outline follows your cursor
-5. Click it — the popup reopens (next time) with all locators
-6. Switch tabs: **Locators · Java · POM · Element**
-7. Click **Copy** on any block
+2. Click the extension icon
+3. Pick **Single** mode (default) → press **Start Inspect**
+4. The popup closes automatically and a floating panel appears on the page
+5. Hover any element — blue outline follows your cursor
+6. Click it — the popup reopens (next time) with all locators
+7. Switch tabs: **Locators · Java · POM · Element**
+8. Click **Copy** on any block
 
-### Keyboard
+### Multi-element capture
+
+1. Click the extension icon
+2. Switch to **Multi-capture** mode
+3. Press **Start Multi-capture**
+4. Click multiple elements one after another — floating panel shows the live count
+5. Press **Done** on the floating panel when finished
+6. Reopen the popup — the **Captures strip** lists every element
+7. The **POM** tab now contains a complete class with one field + method block per capture
+
+### Capturing a list / table / repeated items
+
+1. Start Inspect on any mode
+2. Click **one** item in the list (a table row, a menu item, a product card)
+3. The extension detects sibling elements matching the same pattern and shows:
+   - A **List card** on the **Locators** tab with the collection locator and item count
+   - A **Java List card** on the **Java** tab with a `findElements` snippet + iteration loop
+4. In Multi-capture mode the POM is enriched with `getXxx()`, `xxxCount()`, and `getXxxAt(int)` helpers for that list
+
+### Capturing elements inside hover popups / dropdowns / tooltips
+
+Some elements only exist after a hover or after another element is clicked open (custom menus, autocomplete suggestions, popovers, modals). Use **Pause mode**:
+
+1. Start Inspect
+2. Press **`P`** (or click the **Pause** button on the floating panel)
+3. The overlay hides and the page becomes fully interactive — the panel turns orange
+4. Open the popup naturally (hover the trigger, click to expand, etc.)
+5. Position your cursor on the element you want inside the popup
+6. Press **`P`** again to resume inspect
+7. Click — the element inside the popup is captured
+
+### Keyboard shortcuts
 
 | Key | Action |
 |-----|--------|
 | `ALT` + click | Capture exact element (skip auto-promote) |
+| `P` | Toggle Pause / Resume (lets you open menus and popups normally) |
 | `ESC` | Cancel inspect mode |
 
 ---
@@ -119,12 +156,12 @@ smart-selenium-locator-generator/
 
 | Module | Responsibility |
 |--------|----------------|
-| `content.js` | Hover overlay, click capture, ESC handling, in-page status panel, auto-promote |
+| `content.js` | Inspect lifecycle, hover overlay, click capture, in-page floating panel, auto-promote, pause toggle, list detection |
 | `xpathGenerator.js` | Builds positional, attribute-based, and text-based XPath; detects dynamic values |
 | `cssGenerator.js` | Builds shortest unique CSS selector; falls back to `:nth-of-type` chain |
 | `locatorPriority.js` | Ranks candidate locators and picks the best |
-| `codeGenerator.js` | Generates Java `By.*` calls and full POM classes with smart variable names |
-| `popup.js` | Compact / expanded state machine, message routing, theme + storage |
+| `codeGenerator.js` | Generates Java `By.*` calls, list snippets, single + combined POM classes, smart variable names |
+| `popup.js` | Compact / expanded state machine, mode toggle (Single / Multi), captures list, combined POM regen, message routing, theme + storage |
 
 ---
 
@@ -153,12 +190,14 @@ The extension ranks locators in this order, and skips any that look unstable:
 
 ## Example Output
 
-### Captured element
+### Single-element capture
+
+**Captured:**
 ```html
 <button id="login-submit" class="btn btn-primary">Sign In</button>
 ```
 
-### Locators
+**Locators:**
 ```
 Best:        By.id = login-submit
 ID:          login-submit
@@ -168,18 +207,44 @@ XPath:       /html/body[1]/.../button[1]
 Rel XPath:   //*[@id='login-submit']
 ```
 
-### Selenium Java
+**Selenium Java:**
 ```java
 // BUTTON — id
 WebElement loginSubmitButton = driver.findElement(By.id("login-submit"));
 loginSubmitButton.click();
 ```
 
-### Page Object Model
+### List detection
+
+**Captured** (click one `<li>` in a repeating list):
+```html
+<ul class="products">
+  <li class="product-item">...</li>
+  <li class="product-item">...</li>
+  <li class="product-item">...</li>
+</ul>
+```
+
+**List locator + snippet:**
 ```java
+// Collection capture — siblings detected
+List<WebElement> productItems = driver.findElements(By.cssSelector("ul.products > li.product-item"));
+System.out.println("Count: " + productItems.size());
+for (WebElement item : productItems) {
+    System.out.println(item.getText());
+}
+```
+
+### Combined POM (Multi-capture mode)
+
+After capturing an email input, password input, login button, and a list of error messages:
+
+```java
+import java.util.List;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.Select;
 
 public class LoginPage {
 
@@ -189,10 +254,49 @@ public class LoginPage {
         this.driver = driver;
     }
 
-    private final By loginSubmitButton = By.id("login-submit");
+    private final By emailInput = By.id("email");
+    private final By passwordInput = By.id("password");
+    private final By loginButton = By.cssSelector("button.btn-primary");
+    private final By errorMessages = By.cssSelector("ul.errors > li");
 
-    public void clickLoginSubmitButton() {
-        driver.findElement(loginSubmitButton).click();
+    public void setEmailInput(String value) {
+        WebElement el = driver.findElement(emailInput);
+        el.clear();
+        el.sendKeys(value);
+    }
+
+    public String getEmailInputValue() {
+        return driver.findElement(emailInput).getAttribute("value");
+    }
+
+    public void setPasswordInput(String value) {
+        WebElement el = driver.findElement(passwordInput);
+        el.clear();
+        el.sendKeys(value);
+    }
+
+    public String getPasswordInputValue() {
+        return driver.findElement(passwordInput).getAttribute("value");
+    }
+
+    public void clickLoginButton() {
+        driver.findElement(loginButton).click();
+    }
+
+    public boolean isLoginButtonDisplayed() {
+        return driver.findElement(loginButton).isDisplayed();
+    }
+
+    public List<WebElement> getErrorMessages() {
+        return driver.findElements(errorMessages);
+    }
+
+    public int errorMessagesCount() {
+        return driver.findElements(errorMessages).size();
+    }
+
+    public WebElement getErrorMessagesAt(int index) {
+        return driver.findElements(errorMessages).get(index);
     }
 }
 ```
@@ -227,6 +331,7 @@ UI mirrors **macOS Tahoe / 26.5** design language:
 - Cannot inspect Chrome internal pages (`chrome://`, `chrome-extension://`)
 - Some sites with strict CSP may block content script injection — reload the page if inspect fails
 - Generated Java assumes Selenium 4 syntax
+- Custom popups that close on `mousemove` away from the trigger may need **Pause mode** (`P`) — open them naturally, then resume inspect to click the target
 
 ---
 

@@ -70,7 +70,16 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  overscroll-behavior: none;
+  scrollbar-color: var(--hairline-strong) transparent;
+}
+
+html { color-scheme: dark light; }
+html[data-theme="light"] { color-scheme: light; }
 
 body {
   width: 380px;
@@ -82,7 +91,12 @@ body {
     linear-gradient(180deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
   letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
+
+/* Webkit scrollbar styling — kills white track */
+body::-webkit-scrollbar,
+html::-webkit-scrollbar { width: 0; height: 0; }
 
 .app {
   display: flex;

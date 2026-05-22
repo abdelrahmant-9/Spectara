@@ -592,28 +592,36 @@ function resetResults() {
   els.capturesStrip?.classList.add("hidden");
 }
 
-/* ---------------- Live messages ---------------- */
-chrome.runtime.onMessage.addListener(async (msg) => {
+/* ---------------- Live messages ----------------
+ * background.js owns the storage writes (so captures survive
+ * popup-closed inspect sessions). Popup just listens to runtime
+ * messages for UI state changes and to storage.onChanged for
+ * fresh captures.
+ */
+chrome.runtime.onMessage.addListener((msg) => {
   if (!msg || !msg.type) return;
-  if (msg.type === "ELEMENT_CAPTURED" && msg.payload) {
-    const payload = msg.payload;
-    if (payload.mode === "multi") {
-      captures.unshift(payload);
-      activeIndex = 0;
-      await chrome.storage.local.set({ [CAPTURES_KEY]: captures });
-    } else {
-      captures = [payload];
-      activeIndex = 0;
-      await chrome.storage.local.set({ [STORAGE_KEY]: payload, [CAPTURES_KEY]: captures });
-    }
-    renderResult(payload);
-    if (els.startBtn) els.startBtn.disabled = false;
-    if (els.stopBtn) els.stopBtn.disabled = true;
-  }
   if (msg.type === "INSPECT_STOPPED") {
     if (els.startBtn) els.startBtn.disabled = false;
     if (els.stopBtn) els.stopBtn.disabled = true;
     setStatus(captures.length ? "result" : "idle");
+  }
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local") return;
+  if (changes[CAPTURES_KEY]) {
+    const newList = changes[CAPTURES_KEY].newValue;
+    if (Array.isArray(newList) && newList.length) {
+      captures = newList;
+      activeIndex = 0;
+      renderResult(captures[0]);
+      if (els.startBtn) els.startBtn.disabled = false;
+      if (els.stopBtn) els.stopBtn.disabled = true;
+    } else {
+      captures = [];
+      resetResults();
+      showCompact();
+    }
   }
 });
 

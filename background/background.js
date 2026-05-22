@@ -6,11 +6,21 @@
  * Storage keys:
  *   smart_locator_state    → last single capture
  *   smart_locator_captures → array of captures in multi mode (newest first)
+ *   smart_locator_license  → Pro license cache (owned by license.js)
  *
  * Storage cap: 100 most-recent captures. Older entries dropped to keep
  * chrome.storage.local well under the 10 MB hard quota even with very
  * deep DOM payloads.
  */
+
+import {
+  setLicense,
+  refreshLicense,
+  clearLicense,
+  getLicenseStatus,
+  getLicenseRaw,
+  isPro,
+} from "./license.js";
 
 const STATE_KEY = "smart_locator_state";
 const CAPTURES_KEY = "smart_locator_captures";
@@ -34,6 +44,49 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse({ ok: false, error: String(err) });
       });
     return true; // async response
+  }
+
+  /* -------- License management (Pro tier) ----------------------------
+   * All license traffic is brokered through this service worker so the
+   * extension never makes a network request from the popup or content
+   * script. Free users never reach fetchValidation() because none of
+   * these messages fire until a key is explicitly entered.
+   * ------------------------------------------------------------------ */
+  if (msg.type === "LICENSE_SET" && typeof msg.key === "string") {
+    setLicense(msg.key)
+      .then((rec) => sendResponse(rec))
+      .catch((err) => sendResponse({ valid: false, reason: String(err) }));
+    return true;
+  }
+  if (msg.type === "LICENSE_STATUS") {
+    getLicenseStatus()
+      .then((rec) => sendResponse(rec))
+      .catch((err) => sendResponse({ valid: false, reason: String(err) }));
+    return true;
+  }
+  if (msg.type === "LICENSE_RAW") {
+    getLicenseRaw()
+      .then((rec) => sendResponse(rec || null))
+      .catch(() => sendResponse(null));
+    return true;
+  }
+  if (msg.type === "LICENSE_REFRESH") {
+    refreshLicense()
+      .then((rec) => sendResponse(rec))
+      .catch((err) => sendResponse({ valid: false, reason: String(err) }));
+    return true;
+  }
+  if (msg.type === "LICENSE_CLEAR") {
+    clearLicense()
+      .then(() => sendResponse({ ok: true }))
+      .catch((err) => sendResponse({ ok: false, error: String(err) }));
+    return true;
+  }
+  if (msg.type === "LICENSE_IS_PRO") {
+    isPro()
+      .then((b) => sendResponse({ pro: b }))
+      .catch(() => sendResponse({ pro: false }));
+    return true;
   }
 });
 

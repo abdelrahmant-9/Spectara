@@ -1,0 +1,150 @@
+/**
+ * background/license.js
+ * License validation + cache for the Pro tier.
+ *
+ * Architecture rules:
+ *   1. Free users never trigger a network call. fetchValidation() runs only
+ *      when a key has been entered AND its 24-hour cache is stale.
+ *   2. Background service worker owns the single source of truth (no popup
+ *      writes here). Popups send LICENSE_* messages to background.
+ *   3. 30-day offline grace: if the API is unreachable, the last known good
+ *      result is honored for up to 30 days. After that, Pro features lock.
+ *
+ * Storage key (chrome.storage.local):
+ *   smart_locator_license: {
+ *     key, valid, tier, expiresAt, reason, checkedAt, networkOk
+ *   }
+ *
+ * No imports — designed to be imported as an ES module from background.js
+ * (which is already declared as `"type": "module"` in manifest.json).
+ */
+
+const LICENSE_KEY = "smart_locator_license";
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const GRACE_MS = 30 * 24 * 60 * 60 * 1000;
+const API_BASE = "https://api.smartselenium.dev"; // update if you bind a different domain
+const KEY_PATTERN = /^SL-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+
+/* ---------------- Public API ---------------- */
+
+/**
+ * Validate + persist a freshly entered license key.
+ * Returns the stored record (also written to chrome.storage.local).
+ */
+export async function setLicense(rawKey) {
+  const key = String(rawKey || "").trim().toUpperCase();
+  if (!KEY_PATTERN.test(key)) {
+    const rec = makeRecord({ key, valid: false, reason: "invalid-format" });
+    await chrome.storage.local.set({ [LICENSE_KEY]: rec });
+    return rec;
+  }
+  const res = await fetchValidation(key);
+  const rec = makeRecord({
+    key,
+    valid: !!res.valid,
+    tier: res.tier || null,
+    expiresAt: res.expiresAt || null,
+    reason: res.reason || null,
+    networkOk: res.networkOk !== false,
+  });
+  await chrome.storage.local.set({ [LICENSE_KEY]: rec });
+  return rec;
+}
+
+/**
+ * Force-refresh from the backend, bypassing the 24-hour cache.
+ * Useful after a manual "Refresh license" button click in settings.
+ */
+export async function refreshLicense() {
+  const stored = await chrome.storage.local.get(LICENSE_KEY);
+  const cached = stored[LICENSE_KEY];
+  if (!cached || !cached.key) return { valid: false, reason: "no-license" };
+  return setLicense(cached.key);
+}
+
+/** Clear the license — for "Sign out" / "Remove license" in settings. */
+export async function clearLicense() {
+  await chrome.storage.local.remove(LICENSE_KEY);
+  return { ok: true };
+}
+
+/** Returns the raw stored record (or null), without re-validating. */
+export async function getLicenseRaw() {
+  const stored = await chrome.storage.local.get(LICENSE_KEY);
+  return stored[LICENSE_KEY] || null;
+}
+
+/**
+ * Returns the current license status, refreshing from the backend if the
+ * cached record is stale. Honors a 30-day offline grace window if the
+ * backend is unreachable.
+ */
+export async function getLicenseStatus() {
+  const cached = await getLicenseRaw();
+  if (!cached || !cached.key) return { valid: false, reason: "no-license" };
+
+  const now = Date.now();
+  // Fresh-enough cache: short-circuit, no network call
+  if (cached.valid && cached.checkedAt && cached.checkedAt > now - CACHE_TTL_MS) {
+    return cached;
+  }
+
+  // Cache stale → re-validate
+  const res = await fetchValidation(cached.key);
+  if (res.networkOk === false) {
+    // Backend unreachable. Honor stale cache inside grace window.
+    if (cached.valid && cached.checkedAt > now - GRACE_MS) {
+      return { ...cached, fromGrace: true };
+    }
+    return { valid: false, reason: "offline-grace-exceeded", key: cached.key };
+  }
+
+  const rec = makeRecord({
+    key: cached.key,
+    valid: !!res.valid,
+    tier: res.tier || null,
+    expiresAt: res.expiresAt || null,
+    reason: res.reason || null,
+    networkOk: true,
+  });
+  await chrome.storage.local.set({ [LICENSE_KEY]: rec });
+  return rec;
+}
+
+/** Convenience wrapper for feature gates: returns a boolean. */
+export async function isPro() {
+  const s = await getLicenseStatus();
+  return s.valid === true && !!s.tier;
+}
+
+/* ---------------- Internals ---------------- */
+
+function makeRecord(over) {
+  return {
+    key: over.key || null,
+    valid: !!over.valid,
+    tier: over.tier || null,
+    expiresAt: over.expiresAt || null,
+    reason: over.reason || null,
+    checkedAt: Date.now(),
+    networkOk: over.networkOk !== false,
+  };
+}
+
+async function fetchValidation(key) {
+  try {
+    const res = await fetch(`${API_BASE}/v1/license/validate`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ key }),
+    });
+    if (!res.ok) {
+      return { valid: false, reason: `http-${res.status}`, networkOk: true };
+    }
+    const data = await res.json();
+    return { ...data, networkOk: true };
+  } catch (err) {
+    console.warn("[SmartLocator] license fetch failed:", err);
+    return { networkOk: false };
+  }
+}

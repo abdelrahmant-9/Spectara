@@ -1,0 +1,27 @@
+# Cloudflare Worker config for the Smart Selenium license API.
+#
+# Setup:
+#   1. npm i -g wrangler
+#   2. wrangler login
+#   3. wrangler d1 create smart_selenium_licenses
+#      → copy the returned database_id into the [[d1_databases]] block below
+#   4. wrangler d1 execute smart_selenium_licenses --file=worker/schema.sql
+#   5. wrangler secret put LS_WEBHOOK_SECRET
+#      → paste the LemonSqueezy webhook signing secret when prompted
+#   6. wrangler deploy
+#
+# Custom domain (recommended): bind api.smartselenium.dev to this worker
+# from the Cloudflare dashboard. The extension client points at this host.
+
+name = "smart-selenium-licenses"
+main = "index.js"
+compatibility_date = "2025-01-01"
+workers_dev = true
+
+# Optional: pin a smaller bundle limit on the free tier
+# limits = { cpu_ms = 50 }
+
+[[d1_databases]]
+binding       = "DB"
+database_name = "smart_selenium_licenses"
+database_id   = "REPLACE_WITH_DATABASE_ID_FROM_wrangler_d1_create"

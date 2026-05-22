@@ -6,29 +6,31 @@
    ======================================================== */
 
 :root {
-  /* Dark (macOS Tahoe dark) */
-  --bg: #1c1c1e;
-  --bg-grad-1: #1c1c1e;
-  --bg-grad-2: #2c2c2e;
-  --surface: rgba(44, 44, 46, 0.72);
-  --surface-elev: rgba(58, 58, 60, 0.78);
-  --surface-inset: rgba(28, 28, 30, 0.65);
+  /* Dark theme — Selenium-green palette to match extension icon */
+  --bg: #15171a;
+  --bg-grad-1: #15171a;
+  --bg-grad-2: #1f2226;
+  --surface: rgba(36, 40, 44, 0.74);
+  --surface-elev: rgba(48, 53, 58, 0.80);
+  --surface-inset: rgba(20, 22, 25, 0.70);
   --hairline: rgba(255, 255, 255, 0.08);
   --hairline-strong: rgba(255, 255, 255, 0.14);
 
-  --text: #f5f5f7;
-  --text-secondary: rgba(245, 245, 247, 0.62);
-  --text-tertiary: rgba(245, 245, 247, 0.38);
+  --text: #f0f4f1;
+  --text-secondary: rgba(240, 244, 241, 0.62);
+  --text-tertiary: rgba(240, 244, 241, 0.38);
 
-  --accent: #0a84ff;          /* macOS systemBlue dark */
-  --accent-hover: #409cff;
-  --accent-soft: rgba(10, 132, 255, 0.18);
-  --success: #30d158;
+  --accent: #43b02a;          /* Selenium brand green */
+  --accent-hover: #5dc842;
+  --accent-soft: rgba(67, 176, 42, 0.18);
+  --accent-glow: rgba(67, 176, 42, 0.32);
+  --success: #43b02a;
   --danger: #ff453a;
   --orange: #ff9f0a;
   --purple: #bf5af2;
   --teal: #64d2ff;
   --yellow: #ffd60a;
+  --lime: #9bd84d;            /* highlight for brackets / code accents */
 
   --radius-xl: 18px;
   --radius-lg: 14px;
@@ -45,22 +47,23 @@
 }
 
 [data-theme="light"] {
-  --bg: #f2f2f7;
+  --bg: #f4f6f4;
   --bg-grad-1: #ffffff;
-  --bg-grad-2: #ebebf0;
+  --bg-grad-2: #eef2ee;
   --surface: rgba(255, 255, 255, 0.78);
-  --surface-elev: rgba(255, 255, 255, 0.92);
+  --surface-elev: rgba(255, 255, 255, 0.94);
   --surface-inset: rgba(0, 0, 0, 0.04);
   --hairline: rgba(0, 0, 0, 0.08);
   --hairline-strong: rgba(0, 0, 0, 0.14);
 
-  --text: #1d1d1f;
-  --text-secondary: rgba(29, 29, 31, 0.62);
-  --text-tertiary: rgba(29, 29, 31, 0.38);
+  --text: #1a1c1a;
+  --text-secondary: rgba(26, 28, 26, 0.62);
+  --text-tertiary: rgba(26, 28, 26, 0.38);
 
-  --accent: #007aff;
-  --accent-hover: #0a84ff;
-  --accent-soft: rgba(0, 122, 255, 0.12);
+  --accent: #2f8a1f;
+  --accent-hover: #43b02a;
+  --accent-soft: rgba(67, 176, 42, 0.14);
+  --accent-glow: rgba(67, 176, 42, 0.24);
 
   --shadow-1: 0 4px 16px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.6) inset;
   --shadow-2: 0 8px 28px rgba(0,0,0,0.10), 0 1px 0 rgba(255,255,255,0.7) inset;
@@ -74,8 +77,8 @@ body {
   font-family: var(--font-ui);
   color: var(--text);
   background:
-    radial-gradient(120% 80% at 0% 0%, rgba(10,132,255,0.10) 0%, transparent 55%),
-    radial-gradient(120% 80% at 100% 100%, rgba(191,90,242,0.10) 0%, transparent 55%),
+    radial-gradient(120% 80% at 0% 0%, rgba(67,176,42,0.12) 0%, transparent 55%),
+    radial-gradient(120% 80% at 100% 100%, rgba(155,216,77,0.08) 0%, transparent 55%),
     linear-gradient(180deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
   letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
@@ -114,10 +117,10 @@ body {
   height: 56px;
   border-radius: 16px;
   background:
-    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.0)),
-    linear-gradient(135deg, rgba(10,132,255,0.22), rgba(191,90,242,0.22));
+    radial-gradient(circle at 30% 30%, rgba(155,216,77,0.20), transparent 60%),
+    linear-gradient(180deg, #1f2226, #15171a);
   border: 1px solid var(--hairline-strong);
-  box-shadow: var(--shadow-1);
+  box-shadow: var(--shadow-1), 0 0 0 1px var(--accent-glow);
   display: grid;
   place-items: center;
   margin-bottom: 6px;
@@ -190,9 +193,11 @@ body {
 .nav-mark {
   width: 28px; height: 28px;
   border-radius: 9px;
-  background: linear-gradient(135deg, var(--accent), var(--purple));
+  background:
+    radial-gradient(circle at 30% 30%, rgba(155,216,77,0.30), transparent 60%),
+    linear-gradient(135deg, #1f2226, #15171a);
   border: 1px solid var(--hairline-strong);
-  box-shadow: 0 2px 6px rgba(10,132,255,0.30);
+  box-shadow: 0 2px 8px rgba(67,176,42,0.32), 0 0 0 1px rgba(67,176,42,0.18) inset;
 }
 .nav-title h2 {
   margin: 0;
@@ -264,13 +269,14 @@ body {
 .pill-icon { font-size: 9px; opacity: 0.85; }
 
 .pill-primary {
-  background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 85%, black));
-  border-color: color-mix(in srgb, var(--accent) 70%, black);
+  background: linear-gradient(180deg, var(--accent-hover), var(--accent));
+  border-color: color-mix(in srgb, var(--accent) 65%, black);
   color: white;
-  box-shadow: 0 4px 14px rgba(10,132,255,0.32), 0 1px 0 rgba(255,255,255,0.18) inset;
+  box-shadow: 0 4px 14px var(--accent-glow), 0 1px 0 rgba(255,255,255,0.20) inset;
 }
 .pill-primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, var(--accent-hover), var(--accent));
+  background: linear-gradient(180deg, #6ed14f, var(--accent-hover));
+  box-shadow: 0 6px 18px var(--accent-glow), 0 1px 0 rgba(255,255,255,0.24) inset;
 }
 
 .pill-danger {
@@ -347,8 +353,8 @@ body {
   -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 .card.best {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--hairline));
-  box-shadow: 0 6px 22px rgba(10,132,255,0.18), var(--shadow-1);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--hairline));
+  box-shadow: 0 6px 22px var(--accent-glow), var(--shadow-1);
 }
 
 .card-head {
@@ -372,16 +378,16 @@ body {
   border: 1px solid var(--hairline);
   text-transform: uppercase;
 }
-.badge-id    { color: var(--success); border-color: color-mix(in srgb, var(--success) 40%, transparent); }
-.badge-name  { color: var(--yellow);  border-color: color-mix(in srgb, var(--yellow)  40%, transparent); }
-.badge-css   { color: var(--accent);  border-color: color-mix(in srgb, var(--accent)  40%, transparent); }
-.badge-xpath { color: var(--purple);  border-color: color-mix(in srgb, var(--purple)  40%, transparent); }
-.badge-java  { color: var(--orange);  border-color: color-mix(in srgb, var(--orange)  40%, transparent); }
-.badge-pom   { color: var(--teal);    border-color: color-mix(in srgb, var(--teal)    40%, transparent); }
+.badge-id    { color: var(--lime);    border-color: color-mix(in srgb, var(--lime)   45%, transparent); }
+.badge-name  { color: var(--yellow);  border-color: color-mix(in srgb, var(--yellow) 40%, transparent); }
+.badge-css   { color: var(--accent);  border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.badge-xpath { color: var(--purple);  border-color: color-mix(in srgb, var(--purple) 40%, transparent); }
+.badge-java  { color: var(--orange);  border-color: color-mix(in srgb, var(--orange) 40%, transparent); }
+.badge-pom   { color: var(--teal);    border-color: color-mix(in srgb, var(--teal)   40%, transparent); }
 .badge-best  {
   color: white;
-  background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 80%, black));
-  border-color: color-mix(in srgb, var(--accent) 60%, black);
+  background: linear-gradient(180deg, var(--accent-hover), var(--accent));
+  border-color: color-mix(in srgb, var(--accent) 50%, black);
 }
 
 .copy-btn {
@@ -567,8 +573,8 @@ body {
   margin: 0;
   padding: 0;
   background: linear-gradient(135deg,
-    color-mix(in srgb, var(--accent) 18%, transparent),
-    color-mix(in srgb, var(--purple) 18%, transparent));
+    color-mix(in srgb, var(--accent) 22%, transparent),
+    color-mix(in srgb, var(--lime) 14%, transparent));
   border-bottom: 1px solid var(--hairline);
   animation: onboard-in 0.3s ease-out;
 }

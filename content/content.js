@@ -67,21 +67,21 @@
         position: fixed;
         pointer-events: none;
         z-index: 2147483646;
-        border: 2px solid #4f8cff;
-        background: rgba(79, 140, 255, 0.12);
+        border: 2px solid #43b02a;
+        background: rgba(67, 176, 42, 0.14);
         box-shadow: 0 0 0 9999px rgba(0,0,0,0.0);
         transition: all 0.04s linear;
         border-radius: 2px;
       }
       #${OVERLAY_ID}.locked {
-        border-color: #2ecc71;
-        background: rgba(46, 204, 113, 0.18);
+        border-color: #9bd84d;
+        background: rgba(155, 216, 77, 0.22);
       }
       .__smart_locator_label__ {
         position: absolute;
         top: -22px;
         left: 0;
-        background: #4f8cff;
+        background: #43b02a;
         color: white;
         font: 11px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         padding: 2px 6px;
@@ -157,19 +157,19 @@
         }
         .dot {
           width: 8px; height: 8px; border-radius: 50%;
-          background: #30d158;
-          box-shadow: 0 0 0 4px rgba(48,209,88,0.18);
+          background: #43b02a;
+          box-shadow: 0 0 0 4px rgba(67,176,42,0.22);
           animation: pulse 1.2s ease-in-out infinite;
           flex-shrink: 0;
         }
         @keyframes pulse {
-          0%,100% { box-shadow: 0 0 0 4px rgba(48,209,88,0.18); }
-          50%     { box-shadow: 0 0 0 7px rgba(48,209,88,0.08); }
+          0%,100% { box-shadow: 0 0 0 4px rgba(67,176,42,0.22); }
+          50%     { box-shadow: 0 0 0 7px rgba(67,176,42,0.10); }
         }
         .txt { flex: 1; font-weight: 500; min-width: 0; }
         .row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .mode { font-weight: 600; }
-        .count { font-size: 11px; color: #0a84ff; font-weight: 600; }
+        .count { font-size: 11px; color: #9bd84d; font-weight: 600; }
         .hint { font-size: 11px; color: rgba(245,245,247,0.55); font-weight: 400; margin-top: 2px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
         .kbd {
           display: inline-flex;
@@ -789,10 +789,10 @@
       // Multi mode: keep inspecting, flash overlay green briefly
       setTimeout(() => {
         if (panel) {
-          const flash = panel.querySelector(".__sl_dot");
+          const flash = panelShadow && panelShadow.querySelector(".dot");
           if (flash) {
-            flash.style.background = "#0a84ff";
-            setTimeout(() => { flash.style.background = "#30d158"; }, 300);
+            flash.style.background = "#9bd84d";
+            setTimeout(() => { flash.style.background = "#43b02a"; }, 300);
           }
         }
       }, 0);

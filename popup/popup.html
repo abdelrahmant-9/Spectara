@@ -24,15 +24,22 @@
     <section class="compact" id="compactView">
       <div class="hero">
         <div class="hero-mark">
-          <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+          <svg viewBox="0 0 28 28" width="32" height="32" aria-hidden="true">
             <defs>
               <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#0a84ff"/>
-                <stop offset="100%" stop-color="#bf5af2"/>
+                <stop offset="0%" stop-color="#9bd84d"/>
+                <stop offset="100%" stop-color="#43b02a"/>
               </linearGradient>
             </defs>
-            <circle cx="10" cy="10" r="6.5" fill="none" stroke="url(#g1)" stroke-width="2"/>
-            <line x1="14.5" y1="14.5" x2="20" y2="20" stroke="url(#g1)" stroke-width="2.4" stroke-linecap="round"/>
+            <!-- Magnifier glass -->
+            <circle cx="11" cy="11" r="7" fill="none" stroke="#e8eced" stroke-width="1.6"/>
+            <circle cx="11" cy="11" r="5.4" fill="#15171a"/>
+            <!-- Code brackets inside -->
+            <path d="M 9 9.5 L 7.6 11 L 9 12.5" stroke="url(#g1)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M 13 9.5 L 14.4 11 L 13 12.5" stroke="url(#g1)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <line x1="11" y1="8.6" x2="10.2" y2="13.4" stroke="url(#g1)" stroke-width="1.2" stroke-linecap="round"/>
+            <!-- Handle -->
+            <line x1="16.2" y1="16.2" x2="22" y2="22" stroke="#e8eced" stroke-width="2.2" stroke-linecap="round"/>
           </svg>
         </div>
         <h1>Smart Selenium</h1>

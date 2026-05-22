@@ -66,6 +66,32 @@ const els = {
   onboardBanner: document.getElementById("onboardBanner"),
   onboardClose: document.getElementById("onboardClose"),
   onboardShortcut: document.getElementById("onboardShortcut"),
+
+  // Pro / Settings
+  settingsBtn: document.getElementById("settingsBtn"),
+  settingsModal: document.getElementById("settingsModal"),
+  settingsClose: document.getElementById("settingsClose"),
+  licenseStatusChip: document.getElementById("licenseStatusChip"),
+  licenseDetail: document.getElementById("licenseDetail"),
+  licenseKeyInput: document.getElementById("licenseKeyInput"),
+  licenseSaveBtn: document.getElementById("licenseSaveBtn"),
+  licenseRefreshBtn: document.getElementById("licenseRefreshBtn"),
+  licenseClearBtn: document.getElementById("licenseClearBtn"),
+  licenseError: document.getElementById("licenseError"),
+  buyProBtn: document.getElementById("buyProBtn"),
+  proDotNav: document.getElementById("proDotNav"),
+  playwrightProPill: document.getElementById("playwrightProPill"),
+  playwrightUpgrade: document.getElementById("playwrightUpgrade"),
+  playwrightUpgradeBtn: document.getElementById("playwrightUpgradeBtn"),
+  playwrightCode: document.getElementById("playwright-code"),
+  playwrightLang: document.getElementById("playwrightLang"),
+  exportJavaBtn: document.getElementById("exportJavaBtn"),
+  upsellModal: document.getElementById("upsellModal"),
+  upsellClose: document.getElementById("upsellClose"),
+  upsellFeatureTitle: document.getElementById("upsellFeatureTitle"),
+  upsellFeatureBody: document.getElementById("upsellFeatureBody"),
+  upsellBuyBtn: document.getElementById("upsellBuyBtn"),
+  upsellHasKeyBtn: document.getElementById("upsellHasKeyBtn"),
 };
 
 const STORAGE_KEY = "smart_locator_state";
@@ -864,6 +890,11 @@ function renderResult(data) {
 
   renderCapture(data);
   renderCapturesList();
+
+  // Notify any loaded Pro modules so they can refresh their views
+  if (typeof proApi !== "undefined" && Array.isArray(proApi._renderHooks)) {
+    proApi._renderHooks.forEach((fn) => { try { fn(data); } catch (_) {} });
+  }
 }
 
 function resetResults() {
@@ -937,6 +968,258 @@ els.onboardClose?.addEventListener("click", async () => {
   await chrome.storage.local.set({ smart_locator_first_run: false });
 });
 
+/* ===========================================================
+   Pro / License — settings modal, upsell, lazy module loader
+   =========================================================== */
+
+const PRO_BUY_URL = "https://smartselenium.lemonsqueezy.com";
+
+let proLoaded = false;
+let proStatus = { valid: false, tier: null };
+
+// Public surface passed to Pro modules. Read-only from their POV.
+const proApi = {
+  els,
+  IS_MAC,
+  KEY,
+  showToast,
+  PRO_BUY_URL,
+  getCaptures: () => captures,
+  getActiveCapture: () => captures[activeIndex] || null,
+  getActiveIndex: () => activeIndex,
+  variableName,           // shared with combined-pom builder
+  byLiteral,
+  escapeJavaStr,
+  sendToTab: async (msg) => {
+    const tab = await getActiveTab();
+    if (!tab?.id) return null;
+    return new Promise((resolve) => {
+      try {
+        chrome.tabs.sendMessage(tab.id, msg, (resp) => {
+          void chrome.runtime.lastError;
+          resolve(resp || null);
+        });
+      } catch (_) { resolve(null); }
+    });
+  },
+  onCaptureRendered: (fn) => { proApi._renderHooks.push(fn); },
+  _renderHooks: [],
+};
+
+/* ---------------- License message helpers ---------------- */
+function sendBg(msg) {
+  return new Promise((resolve) => {
+    try {
+      chrome.runtime.sendMessage(msg, (resp) => {
+        void chrome.runtime.lastError;
+        resolve(resp || null);
+      });
+    } catch (_) { resolve(null); }
+  });
+}
+
+async function refreshLicenseUI() {
+  const status = await sendBg({ type: "LICENSE_STATUS" });
+  proStatus = status || { valid: false };
+  const chip = els.licenseStatusChip;
+  if (chip) {
+    chip.className = "status-chip";
+    if (status?.valid) {
+      chip.classList.add("pro");
+      chip.textContent = `Pro · ${status.tier || "active"}${status.fromGrace ? " (offline)" : ""}`;
+    } else if (status && status.reason && status.reason !== "no-license") {
+      chip.classList.add("invalid");
+      chip.textContent = humanReason(status.reason);
+    } else {
+      chip.textContent = "Free";
+    }
+  }
+  if (els.licenseDetail) {
+    if (status?.valid) {
+      els.licenseDetail.textContent = status.expiresAt
+        ? `Renews ${new Date(status.expiresAt).toLocaleDateString()}.`
+        : "Lifetime license. All Pro features unlocked.";
+    } else if (status?.reason === "offline-grace-exceeded") {
+      els.licenseDetail.textContent = "Offline grace window exceeded — reconnect to re-validate.";
+    } else {
+      els.licenseDetail.textContent = "Free tier. Locators · Java · POM all included.";
+    }
+  }
+  // Show refresh + remove only when a key is stored
+  const raw = await sendBg({ type: "LICENSE_RAW" });
+  const hasKey = !!(raw && raw.key);
+  els.licenseRefreshBtn?.toggleAttribute("hidden", !hasKey);
+  els.licenseClearBtn?.toggleAttribute("hidden", !hasKey);
+  if (hasKey && els.licenseKeyInput) {
+    els.licenseKeyInput.value = raw.key;
+  }
+  // Nav indicator + tab pill
+  els.proDotNav?.classList.toggle("hidden", !status?.valid);
+  els.playwrightProPill?.classList.toggle("hidden", !!status?.valid);
+  // Hide locked badges on Pro
+  document.querySelectorAll(".pro-locked .pro-pill").forEach((p) => {
+    p.classList.toggle("hidden", !!status?.valid);
+  });
+  // Toggle playwright upgrade CTA vs real code
+  if (els.playwrightUpgrade && els.playwrightCode) {
+    els.playwrightUpgrade.classList.toggle("hidden", !!status?.valid);
+    els.playwrightCode.classList.toggle("hidden", !status?.valid);
+  }
+  // Lazy-load Pro modules on first detected valid status
+  if (status?.valid && !proLoaded) {
+    proLoaded = true;
+    loadProModules().catch((err) => console.error("Pro load failed:", err));
+  }
+}
+
+function humanReason(r) {
+  switch (r) {
+    case "invalid-format":         return "Invalid format";
+    case "not-found":              return "Not found";
+    case "expired":                return "Expired";
+    case "cancelled":              return "Cancelled";
+    case "refunded":               return "Refunded";
+    case "offline-grace-exceeded": return "Offline too long";
+    default:                       return r ? `Error: ${r}` : "Invalid";
+  }
+}
+
+/* ---------------- Lazy module loader ---------------- */
+async function loadProModules() {
+  // Only Pro users execute this. Imports use relative paths so Chrome
+  // resolves them inside the extension bundle — no web_accessible_resources
+  // entry required, no remote code, no page-visible exposure.
+  const modules = await Promise.all([
+    import("../pro/exportPom.js").catch((e) => ({ _err: e })),
+    import("../pro/playwright.js").catch((e) => ({ _err: e })),
+    import("../pro/locatorValidator.js").catch((e) => ({ _err: e })),
+  ]);
+  for (const m of modules) {
+    if (m && !m._err && typeof m.init === "function") {
+      try { m.init(proApi); }
+      catch (err) { console.error("Pro module init failed:", err); }
+    } else if (m?._err) {
+      console.warn("Pro module skipped:", m._err.message || m._err);
+    }
+  }
+  // Re-render current capture so Pro modules can inject their UI
+  const cur = captures[activeIndex];
+  if (cur) {
+    proApi._renderHooks.forEach((fn) => { try { fn(cur); } catch (_) {} });
+  }
+}
+
+/* ---------------- Settings modal ---------------- */
+function openSettings() {
+  els.settingsModal?.classList.remove("hidden");
+  refreshLicenseUI();
+  setTimeout(() => els.licenseKeyInput?.focus(), 50);
+}
+function closeSettings() {
+  els.settingsModal?.classList.add("hidden");
+  if (els.licenseError) { els.licenseError.textContent = ""; els.licenseError.classList.add("hidden"); }
+}
+
+els.settingsBtn?.addEventListener("click", openSettings);
+els.settingsClose?.addEventListener("click", closeSettings);
+els.settingsModal?.addEventListener("click", (e) => {
+  if (e.target === els.settingsModal) closeSettings();
+});
+
+els.licenseSaveBtn?.addEventListener("click", async () => {
+  const key = (els.licenseKeyInput?.value || "").trim().toUpperCase();
+  if (!key) return;
+  els.licenseSaveBtn.disabled = true;
+  const original = els.licenseSaveBtn.textContent;
+  els.licenseSaveBtn.textContent = "Validating…";
+  const res = await sendBg({ type: "LICENSE_SET", key });
+  els.licenseSaveBtn.disabled = false;
+  els.licenseSaveBtn.textContent = original;
+  if (res?.valid) {
+    if (els.licenseError) { els.licenseError.textContent = ""; els.licenseError.classList.add("hidden"); }
+    showToast("Pro activated");
+  } else if (els.licenseError) {
+    els.licenseError.textContent = `License invalid: ${humanReason(res?.reason || "unknown")}`;
+    els.licenseError.classList.remove("hidden");
+  }
+  refreshLicenseUI();
+});
+
+els.licenseRefreshBtn?.addEventListener("click", async () => {
+  els.licenseRefreshBtn.disabled = true;
+  await sendBg({ type: "LICENSE_REFRESH" });
+  els.licenseRefreshBtn.disabled = false;
+  refreshLicenseUI();
+  showToast("License refreshed");
+});
+
+els.licenseClearBtn?.addEventListener("click", async () => {
+  if (!confirm("Remove license from this device?")) return;
+  await sendBg({ type: "LICENSE_CLEAR" });
+  if (els.licenseKeyInput) els.licenseKeyInput.value = "";
+  proLoaded = false;
+  refreshLicenseUI();
+  showToast("License removed");
+});
+
+/* ---------------- Upsell modal ---------------- */
+const UPSELL_FEATURES = {
+  "export-pom": {
+    title: "Export .java file",
+    body: "Download the full Page Object Model as a ready-to-import .java file with proper package layout and javadoc.",
+  },
+  "playwright": {
+    title: "Playwright codegen",
+    body: "Generate Playwright TypeScript and Python snippets with page.locator(), getByRole, and shadow / iframe helpers.",
+  },
+  "validate": {
+    title: "Live locator validation",
+    body: "See which locators are unique, ambiguous, or broken on the live page before you ship them to CI.",
+  },
+};
+
+function openUpsell(featureKey) {
+  const f = UPSELL_FEATURES[featureKey] || { title: "Pro feature", body: "Unlock advanced features." };
+  if (els.upsellFeatureTitle) els.upsellFeatureTitle.textContent = f.title;
+  if (els.upsellFeatureBody)  els.upsellFeatureBody.textContent  = f.body;
+  els.upsellModal?.classList.remove("hidden");
+}
+function closeUpsell() { els.upsellModal?.classList.add("hidden"); }
+
+els.upsellClose?.addEventListener("click", closeUpsell);
+els.upsellModal?.addEventListener("click", (e) => {
+  if (e.target === els.upsellModal) closeUpsell();
+});
+els.upsellBuyBtn?.addEventListener("click", () => {
+  chrome.tabs.create({ url: PRO_BUY_URL });
+});
+els.upsellHasKeyBtn?.addEventListener("click", () => {
+  closeUpsell();
+  openSettings();
+});
+els.playwrightUpgradeBtn?.addEventListener("click", () => openUpsell("playwright"));
+
+// Click on any element with data-pro-feature opens the upsell modal when free
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-pro-feature]");
+  if (!t) return;
+  if (proStatus.valid) return; // pro module handles it
+  e.preventDefault();
+  e.stopPropagation();
+  openUpsell(t.dataset.proFeature);
+}, true);
+
+// Auto-format license key as user types (SL-XXXX-XXXX-XXXX)
+els.licenseKeyInput?.addEventListener("input", (e) => {
+  let v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (v.startsWith("SL")) v = v.slice(2);
+  let out = "SL";
+  if (v.length > 0) out += "-" + v.slice(0, 4);
+  if (v.length > 4) out += "-" + v.slice(4, 8);
+  if (v.length > 8) out += "-" + v.slice(8, 12);
+  e.target.value = out;
+});
+
 /* ---------------- Boot ---------------- */
 (async function boot() {
   maybeShowOnboarding();
@@ -961,4 +1244,6 @@ els.onboardClose?.addEventListener("click", async () => {
   } else {
     showCompact();
   }
+  // Refresh license status (reads from storage; only hits network when cache stale)
+  refreshLicenseUI().catch((err) => console.warn("license init failed", err));
 })();

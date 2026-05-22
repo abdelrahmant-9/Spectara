@@ -1108,5 +1108,91 @@
       return true;
     }
     if (msg.type === "STOP_INSPECT") { stopInspect(true); sendResponse({ ok: true }); return true; }
+    if (msg.type === "VALIDATE_LOCATOR") {
+      try {
+        const r = validateLocatorOnPage(msg.locator, msg.frameChain || [], msg.shadowChain || []);
+        sendResponse(r);
+      } catch (err) {
+        sendResponse({ error: String(err && err.message || err) });
+      }
+      return true;
+    }
   });
+
+  /* ---------------- VALIDATE_LOCATOR ----------------
+   * Runs only in the top frame for now. Resolves a scope (document or
+   * a shadow root chain) and counts live matches for the supplied
+   * locator. Returns { count } or { error }.
+   *
+   * Pro-tier feature; non-Pro users never trigger this code path.
+   * Iframe-chain handling is partial: top frame can count occurrences
+   * of the iframe element's host locator, but the inner element count
+   * requires the subframe content script (future enhancement).
+   * ------------------------------------------------------ */
+  function validateLocatorOnPage(loc, frameChain, shadowChain) {
+    if (!loc || !loc.value) return { count: 0 };
+
+    let scope = document;
+
+    // Shadow chain: descend through host.shadowRoot for each entry
+    if (Array.isArray(shadowChain) && shadowChain.length) {
+      for (const h of shadowChain) {
+        if (!h.resolved || !h.best || !h.best.value) {
+          return { error: "shadow-unresolved" };
+        }
+        let host;
+        const sel = h.best.type === "id"
+          ? `#${cssEscapeSafe(h.best.value)}`
+          : (h.locators && h.locators.css) || h.best.value;
+        try { host = scope.querySelector(sel); } catch (_) { host = null; }
+        if (!host || !host.shadowRoot) return { error: "shadow-host-missing" };
+        scope = host.shadowRoot;
+      }
+    }
+
+    // Run the actual count
+    let count = 0;
+    try {
+      if (loc.type === "id") {
+        // Inside document scope use getElementById; inside shadow use querySelector
+        if (scope === document) {
+          count = scope.getElementById(loc.value) ? 1 : 0;
+        } else {
+          count = scope.querySelectorAll(`#${cssEscapeSafe(loc.value)}`).length;
+        }
+      } else if (loc.type === "name") {
+        count = scope.querySelectorAll(`[name="${cssAttrSafe(loc.value)}"]`).length;
+      } else if (loc.type === "cssSelector" || loc.type === "className") {
+        const sel = loc.type === "className" ? `.${String(loc.value).split(/\s+/).join(".")}` : loc.value;
+        count = scope.querySelectorAll(sel).length;
+      } else if (loc.type === "xpath") {
+        // XPath only works on document scope; not supported inside shadow
+        if (scope !== document) return { error: "xpath-in-shadow" };
+        const res = document.evaluate(
+          loc.value, document, null,
+          XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null,
+        );
+        count = res.snapshotLength;
+      } else if (loc.type === "linkText") {
+        const links = scope.querySelectorAll("a");
+        for (const a of links) {
+          if ((a.textContent || "").trim() === loc.value) count++;
+        }
+      } else {
+        return { error: "unsupported-type" };
+      }
+    } catch (e) {
+      return { error: String(e.message || e) };
+    }
+
+    return { count, scope: scope === document ? "document" : "shadow" };
+  }
+
+  function cssEscapeSafe(v) {
+    if (window.CSS && CSS.escape) return CSS.escape(v);
+    return String(v).replace(/([^a-zA-Z0-9_\-])/g, "\\$1");
+  }
+  function cssAttrSafe(v) {
+    return String(v).replace(/"/g, '\\"');
+  }
 })();

@@ -83,6 +83,10 @@
           </div>
         </div>
         <div class="nav-actions">
+          <button id="settingsBtn" class="icon-btn" title="Settings / Pro" aria-label="Settings">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span class="pro-dot hidden" id="proDotNav" title="Pro active"></span>
+          </button>
           <button id="clearBtn" class="icon-btn" title="Clear history" aria-label="Clear">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
           </button>
@@ -132,6 +136,10 @@
           <button class="seg-tab active" data-tab="locators" role="tab">Locators</button>
           <button class="seg-tab" data-tab="java" role="tab">Java</button>
           <button class="seg-tab" data-tab="pom" role="tab">POM</button>
+          <button class="seg-tab" data-tab="playwright" role="tab">
+            Playwright
+            <span class="pro-pill" id="playwrightProPill">Pro</span>
+          </button>
           <button class="seg-tab" data-tab="meta" role="tab">Element</button>
         </div>
 
@@ -190,8 +198,42 @@
         <!-- POM -->
         <div class="tab-panel" data-panel="pom">
           <div class="card">
-            <div class="card-head"><span class="badge badge-pom">Page Object Model</span><button class="copy-btn" data-copy="pom-code">Copy</button></div>
+            <div class="card-head">
+              <span class="badge badge-pom">Page Object Model</span>
+              <div class="card-actions">
+                <button class="copy-btn pro-locked" id="exportJavaBtn" data-pro-feature="export-pom">
+                  Export .java <span class="pro-pill">Pro</span>
+                </button>
+                <button class="copy-btn" data-copy="pom-code">Copy</button>
+              </div>
+            </div>
             <pre class="code" id="pom-code">—</pre>
+          </div>
+        </div>
+
+        <!-- Playwright (Pro) -->
+        <div class="tab-panel" data-panel="playwright">
+          <div class="card pro-locked-card" id="playwrightCard">
+            <div class="card-head">
+              <span class="badge badge-playwright">Playwright</span>
+              <div class="card-actions">
+                <select class="copy-all-format" id="playwrightLang" title="Language" aria-label="Language">
+                  <option value="ts">TypeScript</option>
+                  <option value="py">Python</option>
+                </select>
+                <button class="copy-btn" data-copy="playwright-code">Copy</button>
+              </div>
+            </div>
+            <div class="upgrade-cta" id="playwrightUpgrade">
+              <div class="upgrade-cta-title">Playwright codegen is a Pro feature</div>
+              <p class="upgrade-cta-body">
+                Generate Playwright TypeScript and Python snippets with
+                <code>page.locator()</code>, <code>getByRole</code>, and shadow / iframe
+                helpers, scoped per capture.
+              </p>
+              <button class="pill-btn pill-primary" id="playwrightUpgradeBtn">Unlock Pro</button>
+            </div>
+            <pre class="code hidden" id="playwright-code">—</pre>
           </div>
         </div>
 
@@ -231,6 +273,82 @@
     </section>
 
     <div class="toast" id="toast">Copied!</div>
+
+    <!-- ============ Settings / Pro modal ============ -->
+    <div class="modal-overlay hidden" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="modal" role="document">
+        <header class="modal-head">
+          <h2 id="settingsTitle">Settings · Pro</h2>
+          <button class="icon-btn" id="settingsClose" aria-label="Close">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </header>
+
+        <section class="modal-section">
+          <div class="modal-status-row">
+            <span class="modal-label">License status</span>
+            <span class="status-chip" id="licenseStatusChip">Free</span>
+          </div>
+          <div class="modal-sub" id="licenseDetail">Free tier. Locators · Java · POM all included.</div>
+        </section>
+
+        <section class="modal-section">
+          <label class="modal-label" for="licenseKeyInput">License key</label>
+          <div class="key-row">
+            <input
+              type="text"
+              id="licenseKeyInput"
+              class="key-input"
+              placeholder="SL-XXXX-XXXX-XXXX"
+              autocomplete="off"
+              spellcheck="false"
+              maxlength="17"
+            />
+            <button class="pill-btn pill-primary" id="licenseSaveBtn">Activate</button>
+          </div>
+          <div class="modal-actions">
+            <button class="link-btn" id="licenseRefreshBtn" hidden>Refresh status</button>
+            <button class="link-btn link-btn-danger" id="licenseClearBtn" hidden>Remove license</button>
+          </div>
+          <div class="modal-error hidden" id="licenseError"></div>
+        </section>
+
+        <section class="modal-section">
+          <div class="modal-label">Pro tier · $4.99/mo</div>
+          <ul class="pro-feature-list">
+            <li><span class="pro-tick">✓</span> Playwright TypeScript + Python codegen</li>
+            <li><span class="pro-tick">✓</span> Export full POM as .java file</li>
+            <li><span class="pro-tick">✓</span> Live locator validation (uniqueness + match count)</li>
+            <li><span class="pro-tick">✓</span> Cypress codegen (coming soon)</li>
+            <li><span class="pro-tick">✓</span> Cloud sync of captures across devices</li>
+          </ul>
+          <a class="pill-btn pill-primary modal-buy" id="buyProBtn" href="https://smartselenium.lemonsqueezy.com" target="_blank" rel="noopener">Get a license</a>
+          <div class="modal-fineprint">
+            14-day refund. License keys delivered by email after checkout.
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- ============ Pro upsell modal (locked-feature CTA) ============ -->
+    <div class="modal-overlay hidden" id="upsellModal" role="dialog" aria-modal="true" aria-labelledby="upsellTitle">
+      <div class="modal modal-small" role="document">
+        <header class="modal-head">
+          <h2 id="upsellTitle">Pro feature</h2>
+          <button class="icon-btn" id="upsellClose" aria-label="Close">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </header>
+        <section class="modal-section">
+          <h3 class="upsell-title" id="upsellFeatureTitle">Feature locked</h3>
+          <p class="upsell-body" id="upsellFeatureBody">Upgrade to Pro to unlock this feature.</p>
+          <div class="upsell-actions">
+            <button class="pill-btn pill-primary" id="upsellBuyBtn">Get Pro</button>
+            <button class="pill-btn" id="upsellHasKeyBtn">I have a key</button>
+          </div>
+        </section>
+      </div>
+    </div>
   </div>
 
   <script src="popup.js"></script>

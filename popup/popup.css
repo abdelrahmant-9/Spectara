@@ -774,6 +774,270 @@ html::-webkit-scrollbar { width: 0; height: 0; }
   margin-left: 4px;
 }
 
+/* =================================================
+   Pro tier UI — pills, locked states, modals
+   ================================================= */
+.pro-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: white;
+  text-transform: uppercase;
+  margin-left: 5px;
+  box-shadow: 0 1px 3px var(--accent-glow);
+}
+.pro-pill.is-active { background: var(--success); box-shadow: 0 1px 3px rgba(48,209,88,0.4); }
+
+.pro-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+.icon-btn { position: relative; }
+
+.pro-locked {
+  position: relative;
+  opacity: 0.85;
+}
+.pro-locked-card .upgrade-cta {
+  padding: 18px 16px 20px;
+  text-align: center;
+}
+.upgrade-cta-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+.upgrade-cta-body {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0 0 14px;
+}
+.upgrade-cta-body code {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  padding: 1px 5px;
+  background: var(--surface-inset);
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+}
+
+.card-actions { display: flex; align-items: center; gap: 6px; }
+
+.badge-playwright {
+  color: #45ba4b;
+  border-color: color-mix(in srgb, #45ba4b 50%, transparent);
+}
+
+/* =================================================
+   Modal overlays
+   ================================================= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 12, 14, 0.62);
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  animation: modal-fade 0.16s ease-out;
+}
+@keyframes modal-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  width: 100%;
+  max-width: 360px;
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  background: var(--bg-grad-1);
+  border: 1px solid var(--hairline-strong);
+  border-radius: 14px;
+  box-shadow: var(--shadow-2);
+  animation: modal-pop 0.18s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.modal-small { max-width: 320px; }
+@keyframes modal-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 14px 8px;
+  border-bottom: 1px solid var(--hairline);
+}
+.modal-head h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.modal-section {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--hairline);
+}
+.modal-section:last-of-type { border-bottom: none; }
+
+.modal-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.modal-sub { font-size: 11.5px; color: var(--text-secondary); }
+
+.modal-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.status-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface-inset);
+  border: 1px solid var(--hairline);
+  color: var(--text-secondary);
+}
+.status-chip.pro {
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: white;
+  border-color: transparent;
+}
+.status-chip.invalid { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); }
+.status-chip.grace   { color: var(--orange); border-color: color-mix(in srgb, var(--orange) 40%, transparent); }
+
+.key-row {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+.key-input {
+  flex: 1;
+  background: var(--surface-inset);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  padding: 9px 11px;
+  text-transform: uppercase;
+  outline: none;
+  transition: border-color 0.12s, background 0.12s;
+}
+.key-input:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+.key-input::placeholder { color: var(--text-tertiary); letter-spacing: 1px; }
+
+.modal-actions {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+}
+.modal-error {
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--danger);
+  padding: 6px 8px;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  border-radius: 6px;
+}
+
+.pro-feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pro-feature-list li {
+  font-size: 12px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pro-tick {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+  line-height: 16px;
+  flex-shrink: 0;
+}
+
+.modal-buy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  width: 100%;
+}
+.modal-fineprint {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+}
+
+.upsell-title { margin: 0 0 6px; font-size: 14px; font-weight: 700; }
+.upsell-body  { margin: 0 0 14px; font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+.upsell-actions { display: flex; gap: 6px; }
+.upsell-actions .pill-btn { flex: 1; }
+
+/* =================================================
+   Locator validator badges (Pro)
+   ================================================= */
+.validator-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  margin-left: 5px;
+}
+.validator-badge.unique  { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); }
+.validator-badge.multi   { background: color-mix(in srgb, var(--orange) 18%, transparent);  color: var(--orange);  }
+.validator-badge.broken  { background: color-mix(in srgb, var(--danger) 18%, transparent);  color: var(--danger);  }
+.validator-badge.checking{ background: var(--surface-inset); color: var(--text-secondary); }
+
 /* Fallback for color-mix (older browsers) — same look in modern Chrome */
 @supports not (color: color-mix(in srgb, red, blue)) {
   .badge-id    { border-color: rgba(48,209,88,0.4); }

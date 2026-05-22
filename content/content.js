@@ -81,6 +81,19 @@
         align-items: center;
         gap: 10px;
         animation: __sl_in 0.18s ease-out;
+        isolation: isolate;
+        pointer-events: auto !important;
+        user-select: none;
+      }
+      #${PANEL_ID} *,
+      html.smart-locator-inspect #${PANEL_ID},
+      html.smart-locator-inspect #${PANEL_ID} * {
+        pointer-events: auto !important;
+        cursor: default !important;
+      }
+      html.smart-locator-inspect #${PANEL_ID} button,
+      #${PANEL_ID} button {
+        cursor: pointer !important;
       }
       @keyframes __sl_in {
         from { opacity: 0; transform: translateY(-6px); }
@@ -101,15 +114,21 @@
       #${PANEL_ID} .__sl_mode { font-weight: 600; }
       #${PANEL_ID} .__sl_count { font-size: 11px; color: #0a84ff; font-weight: 600; }
       #${PANEL_ID} button {
+        position: relative;
+        z-index: 1;
         background: rgba(255,255,255,0.10);
         border: 1px solid rgba(255,255,255,0.10);
         color: #f5f5f7;
         font: 600 12px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-        padding: 6px 10px;
+        padding: 8px 14px;
+        min-height: 32px;
         border-radius: 8px;
-        cursor: pointer;
-        transition: background 0.12s;
+        cursor: pointer !important;
+        transition: background 0.12s, transform 0.08s;
+        -webkit-appearance: none;
+        appearance: none;
       }
+      #${PANEL_ID} button:active { transform: scale(0.96); }
       #${PANEL_ID} button:hover { background: rgba(255,255,255,0.18); }
       #${PANEL_ID} button.__sl_stop { background: rgba(255,69,58,0.85); border-color: rgba(255,69,58,0.6); }
       #${PANEL_ID} button.__sl_stop:hover { background: rgba(255,69,58,1); }
@@ -135,20 +154,40 @@
       <button class="__sl_stop" type="button">${inspectMode === "multi" ? "Done" : "Stop"}</button>
     `;
     document.documentElement.appendChild(panel);
+
     const stopBtn = panel.querySelector(".__sl_stop");
-    stopBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      stopInspect(true);
-    }, true);
     const pauseBtn = panel.querySelector(".__sl_pause");
-    pauseBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      togglePause();
-    }, true);
-    panel.addEventListener("click", (e) => { e.stopPropagation(); }, true);
-    panel.addEventListener("mouseover", (e) => { e.stopPropagation(); }, true);
+
+    // Bind via multiple event types so Mac trackpad + Chrome can't miss
+    function bindBtn(btn, fn) {
+      const handler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        fn();
+      };
+      btn.addEventListener("click", handler, true);
+      btn.addEventListener("mousedown", (e) => {
+        // Eat mousedown so document-level blockEvent can't interfere
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }, true);
+      btn.addEventListener("mouseup", (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }, true);
+      btn.addEventListener("pointerdown", (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }, true);
+    }
+    bindBtn(stopBtn, () => stopInspect(true));
+    bindBtn(pauseBtn, () => togglePause());
+
+    // Panel itself swallows propagation so document handlers don't fire
+    ["click", "mousedown", "mouseup", "mouseover", "mousemove", "pointerdown"].forEach((ev) => {
+      panel.addEventListener(ev, (e) => { e.stopPropagation(); }, true);
+    });
     return panel;
   }
 

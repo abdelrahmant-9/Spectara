@@ -57,6 +57,17 @@ const CAPTURES_KEY = "smart_locator_captures";
 const MODE_KEY = "smart_locator_mode";
 const THEME_KEY = "smart_locator_theme";
 
+// OS detection for keybinding display
+const IS_MAC = /Mac|iPhone|iPad|iPod/i.test(
+  (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || ""
+);
+const KEY = {
+  ALT:   IS_MAC ? "⌥ Option" : "Alt",
+  ALT_S: IS_MAC ? "⌥"        : "Alt",
+  ESC:   "Esc",
+  PAUSE: "P",
+};
+
 let currentMode = "single";
 let captures = []; // [{ element, locators, best, isList, listLocator, javaCode, pomCode, ... }]
 let activeIndex = 0;
@@ -105,6 +116,14 @@ function updateStartLabel() {
     const span = els.startBtnCompact.querySelector("span:last-child");
     if (span) span.textContent = currentMode === "multi" ? "Start Multi-capture" : "Start Inspect";
   }
+  // Update compact-view kbd hints to OS-correct labels
+  document.querySelectorAll(".kbd-row").forEach((row) => {
+    const kbds = row.querySelectorAll(".kbd");
+    if (kbds.length >= 2) {
+      kbds[0].textContent = KEY.ALT_S;
+      kbds[1].textContent = KEY.ESC;
+    }
+  });
 }
 
 /* ---------------- Theme ---------------- */
@@ -215,7 +234,7 @@ async function handleStart() {
   setHint(
     currentMode === "multi"
       ? `<b>Multi-capture:</b> click multiple elements. Press <b>Done</b> on the floating panel when finished.`
-      : "Hover and click any element. <b>ALT</b> for exact node, <b>ESC</b> to cancel."
+      : `Hover and click any element. <b>${KEY.ALT}</b> for exact node, <b>${KEY.ESC}</b> to cancel.`
   );
 
   setTimeout(() => window.close(), 80);
@@ -548,7 +567,7 @@ function renderResult(data) {
   setStatus("result");
 
   if (data.promoted) {
-    setHint(`Auto-promoted <b>&lt;${data.originalTag}&gt;</b> → <b>&lt;${data.element.tag}&gt;</b>. ALT+click for exact node.`);
+    setHint(`Auto-promoted <b>&lt;${data.originalTag}&gt;</b> → <b>&lt;${data.element.tag}&gt;</b>. <b>${KEY.ALT}</b>+click for exact node.`);
   } else if (currentMode === "multi") {
     setHint(`<b>${captures.length}</b> element${captures.length === 1 ? "" : "s"} captured. POM rebuilds with each click.`);
   } else if (data.isList) {

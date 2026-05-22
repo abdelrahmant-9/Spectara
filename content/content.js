@@ -20,9 +20,22 @@
   let lastHovered = null;
   let overlay = null;
   let panel = null;
+  let panelShadow = null;
   let inspectMode = "single"; // "single" | "multi"
   let captureCount = 0;
   let paused = false;
+
+  // OS detection for keybinding labels
+  const IS_MAC = /Mac|iPhone|iPad|iPod/i.test(
+    (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || ""
+  );
+  const KEY = {
+    ALT:    IS_MAC ? "⌥ Option" : "Alt",
+    ALT_S:  IS_MAC ? "⌥"        : "Alt",
+    ESC:    "Esc",
+    PAUSE:  "P",
+    CMD:    IS_MAC ? "⌘"        : "Ctrl",
+  };
 
   /* ---------- Styles ---------- */
   function injectStyle() {
@@ -62,140 +75,182 @@
         cursor: auto !important;
       }
       html.smart-locator-paused #${OVERLAY_ID} { display: none !important; }
-      #${PANEL_ID} {
-        position: fixed;
-        top: 16px;
-        right: 16px;
-        z-index: 2147483647;
-        min-width: 220px;
-        padding: 10px 12px;
-        background: rgba(28, 28, 30, 0.72);
-        backdrop-filter: blur(30px) saturate(180%);
-        -webkit-backdrop-filter: blur(30px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 14px;
-        color: #f5f5f7;
-        font: 13px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        animation: __sl_in 0.18s ease-out;
-        isolation: isolate;
-        pointer-events: auto !important;
-        user-select: none;
-      }
-      #${PANEL_ID} *,
-      html.smart-locator-inspect #${PANEL_ID},
-      html.smart-locator-inspect #${PANEL_ID} * {
-        pointer-events: auto !important;
-        cursor: default !important;
-      }
-      html.smart-locator-inspect #${PANEL_ID} button,
-      #${PANEL_ID} button {
-        cursor: pointer !important;
-      }
-      @keyframes __sl_in {
-        from { opacity: 0; transform: translateY(-6px); }
-        to   { opacity: 1; transform: translateY(0); }
-      }
-      #${PANEL_ID} .__sl_dot {
-        width: 8px; height: 8px; border-radius: 50%;
-        background: #30d158;
-        box-shadow: 0 0 0 4px rgba(48,209,88,0.18);
-        animation: __sl_pulse 1.2s ease-in-out infinite;
-      }
-      @keyframes __sl_pulse {
-        0%,100% { box-shadow: 0 0 0 4px rgba(48,209,88,0.18); }
-        50%     { box-shadow: 0 0 0 7px rgba(48,209,88,0.08); }
-      }
-      #${PANEL_ID} .__sl_txt { flex: 1; font-weight: 500; }
-      #${PANEL_ID} .__sl_hint { font-size: 11px; color: rgba(245,245,247,0.55); font-weight: 400; margin-top: 1px; }
-      #${PANEL_ID} .__sl_mode { font-weight: 600; }
-      #${PANEL_ID} .__sl_count { font-size: 11px; color: #0a84ff; font-weight: 600; }
-      #${PANEL_ID} button {
-        position: relative;
-        z-index: 1;
-        background: rgba(255,255,255,0.10);
-        border: 1px solid rgba(255,255,255,0.10);
-        color: #f5f5f7;
-        font: 600 12px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-        padding: 8px 14px;
-        min-height: 32px;
-        border-radius: 8px;
-        cursor: pointer !important;
-        transition: background 0.12s, transform 0.08s;
-        -webkit-appearance: none;
-        appearance: none;
-      }
-      #${PANEL_ID} button:active { transform: scale(0.96); }
-      #${PANEL_ID} button:hover { background: rgba(255,255,255,0.18); }
-      #${PANEL_ID} button.__sl_stop { background: rgba(255,69,58,0.85); border-color: rgba(255,69,58,0.6); }
-      #${PANEL_ID} button.__sl_stop:hover { background: rgba(255,69,58,1); }
-      #${PANEL_ID} button.__sl_pause.active { background: rgba(255,159,10,0.85); border-color: rgba(255,159,10,0.6); }
-      #${PANEL_ID} button.__sl_pause.active:hover { background: rgba(255,159,10,1); }
+      /* Panel itself lives in Shadow DOM — only need a hard cursor reset
+         so the crosshair from inspect mode never appears over it. */
+      #${PANEL_ID}, #${PANEL_ID} * { cursor: auto !important; }
     `;
     document.documentElement.appendChild(style);
   }
 
+  /**
+   * Floating panel rendered inside Shadow DOM for full style + event
+   * isolation. Page CSS (including our own inspect crosshair) cannot
+   * bleed in, and document-level event blockers cannot suppress
+   * button clicks — the host id is excluded by our panel check.
+   */
   function createPanel() {
     if (panel) return panel;
-    panel = document.createElement("div");
-    panel.id = PANEL_ID;
-    const modeLabel = inspectMode === "multi" ? "Multi mode" : "Inspect mode";
-    panel.innerHTML = `
-      <span class="__sl_dot"></span>
-      <div class="__sl_txt">
-        <span class="__sl_mode">${modeLabel}</span>
-        <span class="__sl_count" style="display:none"></span>
-        <div class="__sl_hint">Click · ALT exact · P pause · ESC cancel</div>
+
+    const host = document.createElement("div");
+    host.id = PANEL_ID;
+    host.style.cssText = [
+      "all: initial",
+      "position: fixed",
+      "top: 0",
+      "right: 0",
+      "width: auto",
+      "height: auto",
+      "z-index: 2147483647",
+      "pointer-events: none",
+    ].join(";");
+
+    const shadow = host.attachShadow({ mode: "open" });
+    shadow.innerHTML = `
+      <style>
+        :host { all: initial; }
+        * { box-sizing: border-box; }
+        .panel {
+          position: fixed;
+          top: 16px;
+          right: 16px;
+          min-width: 260px;
+          padding: 10px 12px;
+          background: rgba(28, 28, 30, 0.78);
+          -webkit-backdrop-filter: blur(30px) saturate(180%);
+          backdrop-filter: blur(30px) saturate(180%);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 14px;
+          color: #f5f5f7;
+          font: 13px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.42);
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          pointer-events: auto;
+          user-select: none;
+          cursor: default;
+          animation: in 0.18s ease-out;
+        }
+        @keyframes in {
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .dot {
+          width: 8px; height: 8px; border-radius: 50%;
+          background: #30d158;
+          box-shadow: 0 0 0 4px rgba(48,209,88,0.18);
+          animation: pulse 1.2s ease-in-out infinite;
+          flex-shrink: 0;
+        }
+        @keyframes pulse {
+          0%,100% { box-shadow: 0 0 0 4px rgba(48,209,88,0.18); }
+          50%     { box-shadow: 0 0 0 7px rgba(48,209,88,0.08); }
+        }
+        .txt { flex: 1; font-weight: 500; min-width: 0; }
+        .row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .mode { font-weight: 600; }
+        .count { font-size: 11px; color: #0a84ff; font-weight: 600; }
+        .hint { font-size: 11px; color: rgba(245,245,247,0.55); font-weight: 400; margin-top: 2px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+        .kbd {
+          display: inline-flex;
+          align-items: center;
+          font-family: ui-monospace, "SF Mono", Menlo, monospace;
+          font-size: 10px;
+          padding: 1px 5px;
+          border-radius: 4px;
+          background: rgba(255,255,255,0.10);
+          border: 1px solid rgba(255,255,255,0.10);
+          color: #f5f5f7;
+        }
+        button {
+          -webkit-appearance: none;
+          appearance: none;
+          background: rgba(255,255,255,0.14);
+          border: 1px solid rgba(255,255,255,0.10);
+          color: #f5f5f7;
+          font: 600 12px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+          padding: 9px 14px;
+          min-height: 34px;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: background 0.12s, transform 0.06s;
+          flex-shrink: 0;
+        }
+        button:hover { background: rgba(255,255,255,0.22); }
+        button:active { transform: scale(0.96); }
+        .stop { background: rgba(255,69,58,0.92); border-color: rgba(255,69,58,0.6); }
+        .stop:hover { background: rgba(255,69,58,1); }
+        .pause.active { background: rgba(255,159,10,0.92); border-color: rgba(255,159,10,0.6); }
+        .pause.active:hover { background: rgba(255,159,10,1); }
+      </style>
+      <div class="panel">
+        <span class="dot"></span>
+        <div class="txt">
+          <div class="row">
+            <span class="mode"></span>
+            <span class="count" style="display:none"></span>
+          </div>
+          <div class="hint"></div>
+        </div>
+        <button class="pause" type="button" title="Pause inspect (${KEY.PAUSE}) — open menus / hover popups normally">Pause</button>
+        <button class="stop" type="button">Stop</button>
       </div>
-      <button class="__sl_pause" type="button" title="Pause inspect (P) — let you open menus / hover popups">Pause</button>
-      <button class="__sl_stop" type="button">${inspectMode === "multi" ? "Done" : "Stop"}</button>
     `;
-    document.documentElement.appendChild(panel);
 
-    const stopBtn = panel.querySelector(".__sl_stop");
-    const pauseBtn = panel.querySelector(".__sl_pause");
+    (document.body || document.documentElement).appendChild(host);
+    panel = host;
+    panelShadow = shadow;
 
-    // Bind via multiple event types so Mac trackpad + Chrome can't miss
-    function bindBtn(btn, fn) {
-      const handler = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        fn();
-      };
-      btn.addEventListener("click", handler, true);
-      btn.addEventListener("mousedown", (e) => {
-        // Eat mousedown so document-level blockEvent can't interfere
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-      }, true);
-      btn.addEventListener("mouseup", (e) => {
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-      }, true);
-      btn.addEventListener("pointerdown", (e) => {
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-      }, true);
-    }
-    bindBtn(stopBtn, () => stopInspect(true));
-    bindBtn(pauseBtn, () => togglePause());
+    const pauseBtn = shadow.querySelector(".pause");
+    const stopBtn = shadow.querySelector(".stop");
 
-    // Panel itself swallows propagation so document handlers don't fire
-    ["click", "mousedown", "mouseup", "mouseover", "mousemove", "pointerdown"].forEach((ev) => {
-      panel.addEventListener(ev, (e) => { e.stopPropagation(); }, true);
+    // Inside Shadow DOM the page can't reach these listeners.
+    // Simple bubble-phase click handlers work cleanly.
+    pauseBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      togglePause();
     });
+    stopBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      stopInspect(true);
+    });
+
+    updatePanelText();
     return panel;
   }
 
+  function removePanel() {
+    if (panel && panel.parentNode) panel.parentNode.removeChild(panel);
+    panel = null;
+    panelShadow = null;
+  }
+
+  function updatePanelText() {
+    if (!panelShadow) return;
+    const mode = panelShadow.querySelector(".mode");
+    const hint = panelShadow.querySelector(".hint");
+    const stopBtn = panelShadow.querySelector(".stop");
+    const pauseBtn = panelShadow.querySelector(".pause");
+
+    if (paused) {
+      mode.textContent = "Paused · interact freely";
+      hint.innerHTML = `Open menus / popups normally · <span class="kbd">${KEY.PAUSE}</span> to resume`;
+      pauseBtn.textContent = "Resume";
+      pauseBtn.classList.add("active");
+    } else {
+      mode.textContent = inspectMode === "multi" ? "Multi mode" : "Inspect mode";
+      hint.innerHTML = `Click · <span class="kbd">${KEY.ALT_S}</span> exact · <span class="kbd">${KEY.PAUSE}</span> pause · <span class="kbd">${KEY.ESC}</span> cancel`;
+      pauseBtn.textContent = "Pause";
+      pauseBtn.classList.remove("active");
+    }
+    stopBtn.textContent = inspectMode === "multi" ? "Done" : "Stop";
+  }
+
   function updatePanelCounter() {
-    if (!panel || inspectMode !== "multi") return;
-    const c = panel.querySelector(".__sl_count");
+    if (!panelShadow || inspectMode !== "multi") return;
+    const c = panelShadow.querySelector(".count");
     if (c) {
-      c.textContent = ` · ${captureCount} captured`;
+      c.textContent = `· ${captureCount} captured`;
       c.style.display = "inline";
     }
   }
@@ -204,26 +259,7 @@
     paused = !paused;
     document.documentElement.classList.toggle("smart-locator-paused", paused);
     document.documentElement.classList.toggle("smart-locator-inspect", inspecting && !paused);
-    if (panel) {
-      const btn = panel.querySelector(".__sl_pause");
-      const mode = panel.querySelector(".__sl_mode");
-      const hint = panel.querySelector(".__sl_hint");
-      if (btn) {
-        btn.textContent = paused ? "Resume" : "Pause";
-        btn.classList.toggle("active", paused);
-      }
-      if (mode) mode.textContent = paused
-        ? "Paused · interact freely"
-        : (inspectMode === "multi" ? "Multi mode" : "Inspect mode");
-      if (hint) hint.textContent = paused
-        ? "Open menus / popups normally · P to resume"
-        : "Click · ALT exact · P pause · ESC cancel";
-    }
-  }
-
-  function removePanel() {
-    if (panel && panel.parentNode) panel.parentNode.removeChild(panel);
-    panel = null;
+    updatePanelText();
   }
 
   function createOverlay() {
@@ -472,8 +508,8 @@
     if (!inspecting || paused) return;
     const raw = e.target;
     if (!raw) return;
-    if (raw.id === OVERLAY_ID || raw.closest(`#${OVERLAY_ID}`)) return;
-    if (raw.id === PANEL_ID || raw.closest(`#${PANEL_ID}`)) return;
+    if (raw.id === OVERLAY_ID || (raw.closest && raw.closest(`#${OVERLAY_ID}`))) return;
+    if (isPanelEvent(e)) return;
     const t = promoteTarget(raw);
     lastHovered = t;
     moveOverlayTo(t, false);
@@ -489,7 +525,7 @@
 
     const raw = e.target;
     if (!raw) return;
-    if (raw.id === PANEL_ID || raw.closest(`#${PANEL_ID}`)) return;
+    if (isPanelEvent(e)) return;
 
     // Paused: let click pass through to the page (open menus, etc.)
     if (paused) return;
@@ -528,11 +564,22 @@
     }
   }
 
+  function isPanelEvent(e) {
+    // Shadow DOM retargets event.target to the host (#PANEL_ID).
+    // Also check composedPath for safety with closed shadow trees.
+    const t = e.target;
+    if (t && t.id === PANEL_ID) return true;
+    if (t && t.closest && t.closest(`#${PANEL_ID}`)) return true;
+    const path = (e.composedPath && e.composedPath()) || [];
+    for (const n of path) {
+      if (n && n.id === PANEL_ID) return true;
+    }
+    return false;
+  }
+
   function blockEvent(e) {
     if (!inspecting || paused) return;
-    // Don't block events on our floating panel
-    const t = e.target;
-    if (t && (t.id === PANEL_ID || (t.closest && t.closest(`#${PANEL_ID}`)))) return;
+    if (isPanelEvent(e)) return;
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();

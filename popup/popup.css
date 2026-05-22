@@ -561,6 +561,60 @@ body {
 }
 
 /* =================================================
+   Onboarding banner (first-run)
+   ================================================= */
+.onboard-banner {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--accent) 18%, transparent),
+    color-mix(in srgb, var(--purple) 18%, transparent));
+  border-bottom: 1px solid var(--hairline);
+  animation: onboard-in 0.3s ease-out;
+}
+@keyframes onboard-in {
+  from { opacity: 0; max-height: 0; }
+  to   { opacity: 1; max-height: 200px; }
+}
+.onboard-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+}
+.onboard-emoji { font-size: 18px; line-height: 1; flex-shrink: 0; }
+.onboard-text {
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.onboard-text strong { display: block; margin-bottom: 2px; }
+.onboard-text em { color: var(--accent); font-style: normal; font-weight: 600; }
+.kbd-mini {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface-elev);
+  border: 1px solid var(--hairline);
+  color: var(--text);
+}
+.onboard-close {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.onboard-close:hover { color: var(--text); background: var(--surface-inset); }
+
+/* =================================================
    Frame chain (iframe traversal display)
    ================================================= */
 .frame-card { border-color: color-mix(in srgb, var(--purple) 40%, var(--hairline)); }

@@ -8,6 +8,18 @@
 <body>
   <div class="app" id="app">
 
+    <!-- First-run onboarding banner -->
+    <aside class="onboard-banner hidden" id="onboardBanner">
+      <div class="onboard-inner">
+        <span class="onboard-emoji" aria-hidden="true">⚡</span>
+        <div class="onboard-text">
+          <strong>Welcome to Smart Selenium.</strong>
+          Press <span class="kbd-mini" id="onboardShortcut">⌘⇧L</span> anywhere to open. Click <em>Start Inspect</em>, then click any element on the page.
+        </div>
+        <button class="onboard-close" id="onboardClose" aria-label="Dismiss">×</button>
+      </div>
+    </aside>
+
     <!-- ============ COMPACT (empty) STATE ============ -->
     <section class="compact" id="compactView">
       <div class="hero">

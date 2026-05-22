@@ -565,7 +565,7 @@
       if (IS_TOP) {
         // Top frame: no frame chain needed, send directly.
         payload.frameChain = [];
-        chrome.runtime.sendMessage({ type: "ELEMENT_CAPTURED", payload });
+        try { chrome.runtime.sendMessage({ type: "ELEMENT_CAPTURED", payload }, () => void chrome.runtime.lastError); } catch (_) {}
         captureCount++;
         updatePanelCounter();
       } else {
@@ -575,7 +575,7 @@
           // Fallback: relay directly to background. Frame chain will be empty
           // but the locator itself is still useful.
           payload.frameChain = [{ resolved: false, tag: "iframe", url: location.href, note: "Top frame unreachable" }];
-          chrome.runtime.sendMessage({ type: "ELEMENT_CAPTURED", payload });
+          try { chrome.runtime.sendMessage({ type: "ELEMENT_CAPTURED", payload }, () => void chrome.runtime.lastError); } catch (_) {}
         }
         // Subframe counter increment happens on top frame after capture relay.
       }
@@ -842,7 +842,7 @@
     }
 
     try {
-      chrome.runtime.sendMessage({ type: "ELEMENT_CAPTURED", payload });
+      try { chrome.runtime.sendMessage({ type: "ELEMENT_CAPTURED", payload }, () => void chrome.runtime.lastError); } catch (_) {}
     } catch (err) {
       console.error("[SmartLocator] subframe capture relay failed", err);
     }

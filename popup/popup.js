@@ -55,6 +55,10 @@ const els = {
   frameChainList: document.getElementById("frameChainList"),
   frameDepth: document.getElementById("frameDepth"),
   frameStatusPill: document.getElementById("frameStatusPill"),
+
+  onboardBanner: document.getElementById("onboardBanner"),
+  onboardClose: document.getElementById("onboardClose"),
+  onboardShortcut: document.getElementById("onboardShortcut"),
 };
 
 const STORAGE_KEY = "smart_locator_state";
@@ -212,12 +216,25 @@ async function handleStart() {
   const tab = await getActiveTab();
   if (!tab || !tab.id) return;
 
-  if (tab.url && /^(chrome|edge|about|chrome-extension):/i.test(tab.url)) {
+  if (tab.url && /^(chrome|edge|about|chrome-extension|view-source):/i.test(tab.url)) {
+    const msg = "This page is a browser internal page (chrome://, edge://, etc.) and cannot be inspected. Open any normal website and try again.";
     if (!els.expandedView.classList.contains("hidden")) {
-      setHint("Cannot inspect browser internal pages. Open a regular website.", true);
+      setHint(msg, true);
     } else {
-      alert("Cannot inspect browser internal pages.\nOpen a regular website and retry.");
+      // Inline in compact view instead of disruptive alert
+      const hint = document.querySelector(".muted-hint");
+      if (hint) {
+        hint.innerHTML = `<span style="color:var(--danger)">${msg}</span>`;
+      } else {
+        alert(msg);
+      }
     }
+    return;
+  }
+  if (tab.url && /^https:\/\/chromewebstore\.google\.com/i.test(tab.url)) {
+    const msg = "The Chrome Web Store blocks all extension content scripts. Open a regular website to inspect.";
+    if (!els.expandedView.classList.contains("hidden")) setHint(msg, true);
+    else alert(msg);
     return;
   }
 
@@ -722,8 +739,26 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
 });
 
+/* ---------------- Onboarding (first run) ---------------- */
+async function maybeShowOnboarding() {
+  const FIRST_RUN_KEY = "smart_locator_first_run";
+  const stored = await chrome.storage.local.get(FIRST_RUN_KEY);
+  if (!stored[FIRST_RUN_KEY]) return;
+
+  if (els.onboardShortcut) {
+    els.onboardShortcut.textContent = IS_MAC ? "⌘ ⇧ L" : "Ctrl ⇧ L";
+  }
+  els.onboardBanner?.classList.remove("hidden");
+}
+
+els.onboardClose?.addEventListener("click", async () => {
+  els.onboardBanner?.classList.add("hidden");
+  await chrome.storage.local.set({ smart_locator_first_run: false });
+});
+
 /* ---------------- Boot ---------------- */
 (async function boot() {
+  maybeShowOnboarding();
   const stored = await chrome.storage.local.get([STORAGE_KEY, CAPTURES_KEY, MODE_KEY]);
   currentMode = stored[MODE_KEY] || "single";
 

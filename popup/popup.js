@@ -50,6 +50,11 @@ const els = {
   metaClass: document.getElementById("meta-class"),
   metaType: document.getElementById("meta-type"),
   metaText: document.getElementById("meta-text"),
+
+  frameCard: document.getElementById("frameCard"),
+  frameChainList: document.getElementById("frameChainList"),
+  frameDepth: document.getElementById("frameDepth"),
+  frameStatusPill: document.getElementById("frameStatusPill"),
 };
 
 const STORAGE_KEY = "smart_locator_state";
@@ -341,6 +346,47 @@ function renderCapture(data) {
   els.metaClass.textContent = data.element.className || "—";
   els.metaType.textContent = data.element.type || "—";
   els.metaText.textContent = (data.element.text || "").slice(0, 200) || "—";
+
+  renderFrameChain(data.frameChain || []);
+}
+
+function renderFrameChain(chain) {
+  const has = Array.isArray(chain) && chain.length > 0;
+  if (els.frameStatusPill) els.frameStatusPill.classList.toggle("hidden", !has);
+  if (!els.frameCard || !els.frameChainList) return;
+
+  if (!has) {
+    els.frameCard.classList.add("hidden");
+    els.frameChainList.innerHTML = "";
+    if (els.frameDepth) els.frameDepth.textContent = "";
+    return;
+  }
+
+  els.frameCard.classList.remove("hidden");
+  if (els.frameDepth) els.frameDepth.textContent = `${chain.length} level${chain.length === 1 ? "" : "s"} deep`;
+
+  els.frameChainList.innerHTML = "";
+  chain.forEach((f) => {
+    const li = document.createElement("li");
+    if (f.resolved && f.best) {
+      const loc = document.createElement("div");
+      loc.className = "f-locator";
+      loc.textContent = `By.${f.best.type} = ${f.best.value}`;
+      li.appendChild(loc);
+    } else {
+      const loc = document.createElement("div");
+      loc.className = "f-locator f-unresolved";
+      loc.textContent = f.note || "Unresolved iframe";
+      li.appendChild(loc);
+    }
+    if (f.url) {
+      const url = document.createElement("div");
+      url.className = "f-url";
+      url.textContent = f.url;
+      li.appendChild(url);
+    }
+    els.frameChainList.appendChild(li);
+  });
 }
 
 /* ---------------- Captures list rendering ---------------- */
@@ -376,6 +422,13 @@ function renderCapturesList() {
       const tag = document.createElement("span");
       tag.className = "cap-list-tag";
       tag.textContent = `List ${c.listCount}`;
+      li.appendChild(tag);
+    }
+    if (Array.isArray(c.frameChain) && c.frameChain.length) {
+      const tag = document.createElement("span");
+      tag.className = "cap-frame-tag";
+      tag.textContent = `iframe ×${c.frameChain.length}`;
+      tag.title = "Element captured inside an iframe";
       li.appendChild(tag);
     }
     li.appendChild(remove);
@@ -470,53 +523,93 @@ function generateCombinedPom() {
   ].join("\n");
 }
 
+function frameEnterLines(chain) {
+  if (!Array.isArray(chain) || !chain.length) return [];
+  const lines = ["        driver.switchTo().defaultContent();"];
+  chain.forEach((f, i) => {
+    if (f.resolved && f.best && f.best.value) {
+      lines.push(`        driver.switchTo().frame(driver.findElement(${byLiteral(f.best.type, f.best.value)}));`);
+    } else {
+      lines.push(`        // driver.switchTo().frame(/* unresolved frame ${i + 1} */);`);
+    }
+  });
+  return lines;
+}
+function frameLeaveLines(chain) {
+  if (!Array.isArray(chain) || !chain.length) return [];
+  return ["        driver.switchTo().defaultContent();"];
+}
+
 function pomMethodFor(c) {
   const fn = c.fieldName;
   const cap0 = cap(fn);
   const tag = (c.element.tag || "").toLowerCase();
+  const enter = frameEnterLines(c.frameChain);
+  const leave = frameLeaveLines(c.frameChain);
 
   if (c.isList) {
     return [
       `    public List<WebElement> get${cap0}() {`,
-      `        return driver.findElements(${fn});`,
+      ...enter,
+      `        List<WebElement> result = driver.findElements(${fn});`,
+      ...leave,
+      `        return result;`,
       `    }`,
       ``,
       `    public int ${fn}Count() {`,
-      `        return driver.findElements(${fn}).size();`,
+      ...enter,
+      `        int n = driver.findElements(${fn}).size();`,
+      ...leave,
+      `        return n;`,
       `    }`,
       ``,
       `    public WebElement get${cap0}At(int index) {`,
-      `        return driver.findElements(${fn}).get(index);`,
+      ...enter,
+      `        WebElement el = driver.findElements(${fn}).get(index);`,
+      ...leave,
+      `        return el;`,
       `    }`,
     ].join("\n");
   }
   if (tag === "input" || tag === "textarea") {
     return [
       `    public void set${cap0}(String value) {`,
+      ...enter,
       `        WebElement el = driver.findElement(${fn});`,
       `        el.clear();`,
       `        el.sendKeys(value);`,
+      ...leave,
       `    }`,
       ``,
       `    public String get${cap0}Value() {`,
-      `        return driver.findElement(${fn}).getAttribute("value");`,
+      ...enter,
+      `        String v = driver.findElement(${fn}).getAttribute("value");`,
+      ...leave,
+      `        return v;`,
       `    }`,
     ].join("\n");
   }
   if (tag === "select") {
     return [
       `    public void select${cap0}(String visibleText) {`,
+      ...enter,
       `        new Select(driver.findElement(${fn})).selectByVisibleText(visibleText);`,
+      ...leave,
       `    }`,
     ].join("\n");
   }
   return [
     `    public void click${cap0}() {`,
+    ...enter,
     `        driver.findElement(${fn}).click();`,
+    ...leave,
     `    }`,
     ``,
     `    public boolean is${cap0}Displayed() {`,
-    `        return driver.findElement(${fn}).isDisplayed();`,
+    ...enter,
+    `        boolean v = driver.findElement(${fn}).isDisplayed();`,
+    ...leave,
+    `        return v;`,
     `    }`,
   ].join("\n");
 }
@@ -590,6 +683,10 @@ function resetResults() {
   els.listCard?.classList.add("hidden");
   els.javaListCard?.classList.add("hidden");
   els.capturesStrip?.classList.add("hidden");
+  els.frameCard?.classList.add("hidden");
+  els.frameStatusPill?.classList.add("hidden");
+  if (els.frameChainList) els.frameChainList.innerHTML = "";
+  if (els.frameDepth) els.frameDepth.textContent = "";
 }
 
 /* ---------------- Live messages ----------------

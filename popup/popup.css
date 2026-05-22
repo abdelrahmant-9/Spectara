@@ -560,6 +560,89 @@ body {
   color: var(--text-tertiary);
 }
 
+/* =================================================
+   Frame chain (iframe traversal display)
+   ================================================= */
+.frame-card { border-color: color-mix(in srgb, var(--purple) 40%, var(--hairline)); }
+.badge-frame {
+  color: var(--purple);
+  border-color: color-mix(in srgb, var(--purple) 50%, transparent);
+}
+.frame-depth {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.frame-chain {
+  list-style: none;
+  margin: 0;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  counter-reset: framenum;
+}
+.frame-chain li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: var(--surface-inset);
+  border: 1px solid var(--hairline);
+  counter-increment: framenum;
+  font-size: 11px;
+}
+.frame-chain li::before {
+  content: "Frame " counter(framenum);
+  font-weight: 700;
+  font-size: 10px;
+  color: var(--purple);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.frame-chain .f-locator {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+  word-break: break-all;
+}
+.frame-chain .f-url {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  word-break: break-all;
+}
+.frame-chain .f-unresolved {
+  color: var(--danger);
+  font-style: italic;
+}
+
+.frame-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--purple) 18%, transparent);
+  color: var(--purple);
+  border: 1px solid color-mix(in srgb, var(--purple) 40%, transparent);
+  margin-left: 4px;
+}
+
+.captures-list .cap-frame-tag {
+  background: color-mix(in srgb, var(--purple) 18%, transparent);
+  color: var(--purple);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
 /* Fallback for color-mix (older browsers) — same look in modern Chrome */
 @supports not (color: color-mix(in srgb, red, blue)) {
   .badge-id    { border-color: rgba(48,209,88,0.4); }

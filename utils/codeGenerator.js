@@ -75,7 +75,32 @@
     return camel + suffix;
   }
 
-  function javaSnippet(best, element) {
+  /**
+   * Emit driver.switchTo().frame(...) lines for each iframe in the chain.
+   * Always preceded by defaultContent() so the snippet is idempotent.
+   */
+  function emitFrameSwitchIn(frameChain) {
+    if (!Array.isArray(frameChain) || !frameChain.length) return [];
+    const lines = [`// Switch into nested frame chain`, `driver.switchTo().defaultContent();`];
+    frameChain.forEach((f, i) => {
+      if (f.resolved && f.best && f.best.value) {
+        const label = f.id ? `#${f.id}` : (f.name ? `[name=${f.name}]` : `iframe[${i}]`);
+        lines.push(`// → frame ${i + 1}: ${label}`);
+        lines.push(`driver.switchTo().frame(driver.findElement(${byCall(f.best.type, f.best.value)}));`);
+      } else {
+        lines.push(`// → frame ${i + 1}: ${f.note || "unresolved — switchTo manually"}`);
+        lines.push(`// driver.switchTo().frame(/* TODO: provide locator */);`);
+      }
+    });
+    return lines;
+  }
+
+  function emitFrameSwitchOut(frameChain) {
+    if (!Array.isArray(frameChain) || !frameChain.length) return [];
+    return [`driver.switchTo().defaultContent();`];
+  }
+
+  function javaSnippet(best, element, frameChain) {
     if (!best || !best.value) return "// No locator available";
     const varName = variableName(element);
     const tag = (element.tag || "").toLowerCase();
@@ -83,6 +108,7 @@
 
     const lines = [];
     lines.push(`// ${tag.toUpperCase()} — ${best.type}`);
+    lines.push(...emitFrameSwitchIn(frameChain));
     lines.push(`WebElement ${varName} = driver.findElement(${call});`);
 
     if (tag === "input" || tag === "textarea") {
@@ -94,10 +120,12 @@
     } else {
       lines.push(`${varName}.click();`);
     }
+
+    lines.push(...emitFrameSwitchOut(frameChain));
     return lines.join("\n");
   }
 
-  function pomClass(element, locators) {
+  function pomClass(element, locators, frameChain) {
     const className = derivePageName(element);
     const fieldName = variableName(element);
 
@@ -111,7 +139,20 @@
     if (locators.relativeXpath)
       fields.push(`    private final By ${fieldName}ByXpath = By.xpath("${escapeJava(locators.relativeXpath)}");`);
 
-    const action = pomAction(element, fieldName);
+    const action = pomAction(element, fieldName, frameChain);
+
+    // Optional frame-chain locator fields for documentation in the POM.
+    const frameFields = [];
+    if (Array.isArray(frameChain) && frameChain.length) {
+      frameChain.forEach((f, i) => {
+        if (f.resolved && f.best && f.best.value) {
+          frameFields.push(`    // Frame ${i + 1} of ${frameChain.length}`);
+          frameFields.push(`    private final By frame${i + 1}Locator = ${byCall(f.best.type, f.best.value)};`);
+        } else {
+          frameFields.push(`    // Frame ${i + 1}: ${f.note || "unresolved"}`);
+        }
+      });
+    }
 
     return [
       `import org.openqa.selenium.By;`,
@@ -126,6 +167,7 @@
       `        this.driver = driver;`,
       `    }`,
       ``,
+      ...(frameFields.length ? [frameFields.join("\n"), ``] : []),
       fields.join("\n"),
       ``,
       action,
@@ -133,16 +175,38 @@
     ].join("\n");
   }
 
-  function pomAction(element, fieldName) {
+  function frameSwitchInBody(frameChain, indent) {
+    if (!Array.isArray(frameChain) || !frameChain.length) return [];
+    const ind = indent || "        ";
+    const lines = [`${ind}driver.switchTo().defaultContent();`];
+    frameChain.forEach((f, i) => {
+      if (f.resolved && f.best && f.best.value) {
+        lines.push(`${ind}driver.switchTo().frame(driver.findElement(frame${i + 1}Locator));`);
+      } else {
+        lines.push(`${ind}// driver.switchTo().frame(/* unresolved frame ${i + 1} */);`);
+      }
+    });
+    return lines;
+  }
+  function frameSwitchOutBody(frameChain, indent) {
+    if (!Array.isArray(frameChain) || !frameChain.length) return [];
+    return [`${indent || "        "}driver.switchTo().defaultContent();`];
+  }
+
+  function pomAction(element, fieldName, frameChain) {
     const tag = (element.tag || "").toLowerCase();
     const methodSuffix = fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
+    const enterFrame = frameSwitchInBody(frameChain);
+    const leaveFrame = frameSwitchOutBody(frameChain);
 
     if (tag === "input" || tag === "textarea") {
       return [
         `    public ${cap(fieldName)}Page set${methodSuffix}(String value) {`,
+        ...enterFrame,
         `        WebElement el = driver.findElement(${fieldName});`,
         `        el.clear();`,
         `        el.sendKeys(value);`,
+        ...leaveFrame,
         `        return this;`,
         `    }`,
       ].join("\n");
@@ -150,14 +214,18 @@
     if (tag === "select") {
       return [
         `    public void select${methodSuffix}(String visibleText) {`,
+        ...enterFrame,
         `        new org.openqa.selenium.support.ui.Select(driver.findElement(${fieldName}))`,
         `            .selectByVisibleText(visibleText);`,
+        ...leaveFrame,
         `    }`,
       ].join("\n");
     }
     return [
       `    public void click${methodSuffix}() {`,
+      ...enterFrame,
       `        driver.findElement(${fieldName}).click();`,
+      ...leaveFrame,
       `    }`,
     ].join("\n");
   }
@@ -235,19 +303,30 @@
     const fn = c.fieldName;
     const cap0 = cap(fn);
     const tag = (c.element.tag || "").toLowerCase();
+    const enter = frameSwitchInBody(c.frameChain);
+    const leave = frameSwitchOutBody(c.frameChain);
 
     if (c.isList) {
       return [
         `    public List<WebElement> get${cap0}() {`,
-        `        return driver.findElements(${fn});`,
+        ...enter,
+        `        List<WebElement> result = driver.findElements(${fn});`,
+        ...leave,
+        `        return result;`,
         `    }`,
         ``,
         `    public int ${fn}Count() {`,
-        `        return driver.findElements(${fn}).size();`,
+        ...enter,
+        `        int n = driver.findElements(${fn}).size();`,
+        ...leave,
+        `        return n;`,
         `    }`,
         ``,
         `    public WebElement get${cap0}At(int index) {`,
-        `        return driver.findElements(${fn}).get(index);`,
+        ...enter,
+        `        WebElement el = driver.findElements(${fn}).get(index);`,
+        ...leave,
+        `        return el;`,
         `    }`,
       ].join("\n");
     }
@@ -255,30 +334,42 @@
     if (tag === "input" || tag === "textarea") {
       return [
         `    public void set${cap0}(String value) {`,
+        ...enter,
         `        WebElement el = driver.findElement(${fn});`,
         `        el.clear();`,
         `        el.sendKeys(value);`,
+        ...leave,
         `    }`,
         ``,
         `    public String get${cap0}Value() {`,
-        `        return driver.findElement(${fn}).getAttribute("value");`,
+        ...enter,
+        `        String v = driver.findElement(${fn}).getAttribute("value");`,
+        ...leave,
+        `        return v;`,
         `    }`,
       ].join("\n");
     }
     if (tag === "select") {
       return [
         `    public void select${cap0}(String visibleText) {`,
+        ...enter,
         `        new Select(driver.findElement(${fn})).selectByVisibleText(visibleText);`,
+        ...leave,
         `    }`,
       ].join("\n");
     }
     return [
       `    public void click${cap0}() {`,
+      ...enter,
       `        driver.findElement(${fn}).click();`,
+      ...leave,
       `    }`,
       ``,
       `    public boolean is${cap0}Displayed() {`,
-      `        return driver.findElement(${fn}).isDisplayed();`,
+      ...enter,
+      `        boolean v = driver.findElement(${fn}).isDisplayed();`,
+      ...leave,
+      `        return v;`,
       `    }`,
     ].join("\n");
   }
@@ -286,18 +377,20 @@
   /**
    * Java snippet for collection (List<WebElement>).
    */
-  function javaListSnippet(listLocator, element) {
+  function javaListSnippet(listLocator, element, frameChain) {
     if (!listLocator || !listLocator.value) return "// No list locator";
     const varBase = variableName(element).replace(/(Button|Input|Link|Item|Element|Row|Cell)$/, "");
     const varName = varBase + "Items";
     const call = byCall(listLocator.type, listLocator.value);
     return [
       `// Collection capture — siblings detected`,
+      ...emitFrameSwitchIn(frameChain),
       `List<WebElement> ${varName} = driver.findElements(${call});`,
       `System.out.println("Count: " + ${varName}.size());`,
       `for (WebElement item : ${varName}) {`,
       `    System.out.println(item.getText());`,
       `}`,
+      ...emitFrameSwitchOut(frameChain),
     ].join("\n");
   }
 

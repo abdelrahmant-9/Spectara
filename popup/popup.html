@@ -110,7 +110,17 @@
       <div class="captures-strip hidden" id="capturesStrip">
         <div class="captures-head">
           <span class="captures-count" id="capturesCount">0 captured</span>
-          <button class="link-btn" id="clearCapturesBtn">Clear all</button>
+          <div class="captures-actions">
+            <button class="link-btn" id="copyAllBtn" title="Copy all captures">
+              <span class="copy-all-label">Copy all</span>
+              <select class="copy-all-format" id="copyAllFormat" title="Format" aria-label="Format">
+                <option value="java">Java fields</option>
+                <option value="locators">Locators</option>
+                <option value="json">JSON</option>
+              </select>
+            </button>
+            <button class="link-btn link-btn-danger" id="clearCapturesBtn">Clear all</button>
+          </div>
         </div>
         <ul class="captures-list" id="capturesList"></ul>
       </div>

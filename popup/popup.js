@@ -26,6 +26,8 @@ const els = {
   capturesCount: document.getElementById("capturesCount"),
   capturesList: document.getElementById("capturesList"),
   clearCapturesBtn: document.getElementById("clearCapturesBtn"),
+  copyAllBtn: document.getElementById("copyAllBtn"),
+  copyAllFormat: document.getElementById("copyAllFormat"),
 
   locId: document.getElementById("locator-id"),
   locName: document.getElementById("locator-name"),
@@ -300,6 +302,103 @@ els.clearCapturesBtn?.addEventListener("click", async () => {
   renderCapturesList();
   showCompact();
 });
+
+/* ---------------- Copy all captures ---------------- */
+// Stop the <select> inside the link-btn from triggering the parent click.
+els.copyAllFormat?.addEventListener("click", (e) => e.stopPropagation());
+els.copyAllFormat?.addEventListener("change", (e) => e.stopPropagation());
+
+els.copyAllBtn?.addEventListener("click", async (e) => {
+  // Ignore clicks on the format dropdown itself
+  if (e.target && e.target.tagName === "SELECT") return;
+  if (!captures.length) return;
+
+  const fmt = (els.copyAllFormat && els.copyAllFormat.value) || "java";
+  const text = formatAllCaptures(captures, fmt);
+  try {
+    await navigator.clipboard.writeText(text);
+    els.copyAllBtn.classList.add("copied");
+    const labelEl = els.copyAllBtn.querySelector(".copy-all-label");
+    const prev = labelEl ? labelEl.textContent : "";
+    if (labelEl) labelEl.textContent = `Copied ${captures.length}!`;
+    showToast(`Copied ${captures.length} capture${captures.length === 1 ? "" : "s"}`);
+    setTimeout(() => {
+      els.copyAllBtn.classList.remove("copied");
+      if (labelEl) labelEl.textContent = prev || "Copy all";
+    }, 1400);
+  } catch (_) {
+    showToast("Copy failed", true);
+  }
+});
+
+/**
+ * Format every capture in one of three shapes.
+ * - "java"     → `private final By name = By.id("...");` block, ready to drop in a POM
+ * - "locators" → human-readable list with name + best locator
+ * - "json"     → full structured payload array
+ */
+function formatAllCaptures(list, fmt) {
+  // De-duplicate field names — same naming logic as the POM builder
+  const seen = new Map();
+  const enriched = list.map((c) => {
+    let name = variableName(c.element);
+    if (seen.has(name)) {
+      const n = seen.get(name) + 1;
+      seen.set(name, n);
+      name = `${name}${n}`;
+    } else {
+      seen.set(name, 1);
+    }
+    return { ...c, fieldName: name };
+  });
+
+  if (fmt === "json") {
+    // Strip generated code to keep payload light
+    const lean = enriched.map((c) => ({
+      name: c.fieldName,
+      url: c.url,
+      element: c.element,
+      locators: c.locators,
+      best: c.best,
+      isList: !!c.isList,
+      listLocator: c.listLocator || null,
+      listCount: c.listCount || 0,
+      frameChain: c.frameChain || [],
+      shadowChain: c.shadowChain || [],
+      capturedAt: c.capturedAt,
+    }));
+    return JSON.stringify(lean, null, 2);
+  }
+
+  if (fmt === "locators") {
+    const lines = [`// ${list.length} capture${list.length === 1 ? "" : "s"} — Smart Selenium`];
+    enriched.forEach((c) => {
+      const best = c.isList && c.listLocator ? c.listLocator : c.best;
+      const tag = (c.element.tag || "").toLowerCase();
+      const extras = [];
+      if (c.frameChain && c.frameChain.length) extras.push(`frames=${c.frameChain.length}`);
+      if (c.shadowChain && c.shadowChain.length) extras.push(`shadow=${c.shadowChain.length}`);
+      if (c.isList) extras.push(`list=${c.listCount}`);
+      const meta = extras.length ? ` (${extras.join(", ")})` : "";
+      lines.push(`${c.fieldName}  [<${tag}>${meta}]`);
+      lines.push(`  By.${best.type} = ${best.value}`);
+      lines.push("");
+    });
+    return lines.join("\n").trim();
+  }
+
+  // Default: Java field declarations
+  const lines = [];
+  enriched.forEach((c) => {
+    const best = c.isList && c.listLocator ? c.listLocator : c.best;
+    if (!best || !best.value) {
+      lines.push(`// ${c.fieldName}: no locator`);
+      return;
+    }
+    lines.push(`private final By ${c.fieldName} = ${byLiteral(best.type, best.value)};`);
+  });
+  return lines.join("\n");
+}
 
 /* ---------------- Copy ---------------- */
 document.querySelectorAll(".copy-btn").forEach((btn) => {

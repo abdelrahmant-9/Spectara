@@ -513,8 +513,35 @@ html::-webkit-scrollbar { width: 0; height: 0; }
   font-weight: 600;
   cursor: pointer;
   padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .link-btn:hover { text-decoration: underline; }
+.link-btn.copied { color: var(--success); }
+.link-btn-danger { color: var(--danger); }
+.link-btn-danger:hover { text-decoration: underline; }
+
+.captures-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.copy-all-format {
+  background: var(--surface-inset);
+  color: var(--text);
+  border: 1px solid var(--hairline);
+  border-radius: 5px;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 4px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.copy-all-format:hover { border-color: var(--accent); }
+.copy-all-label { pointer-events: none; }
 
 .captures-list {
   list-style: none;

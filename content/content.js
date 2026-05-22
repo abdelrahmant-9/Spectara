@@ -489,23 +489,214 @@
     return String(v).replace(/([^a-zA-Z0-9_\-])/g, "\\$1");
   }
 
-  function buildPayload(el) {
+  /* ---------- Shadow DOM detection ---------- */
+  /**
+   * Given the actual clicked element (from composedPath[0]) plus the
+   * full event composedPath, compute the chain of shadow hosts from
+   * outermost to innermost. Each entry includes the host element and
+   * a locator built relative to its parent scope.
+   *
+   * Returns:
+   *   { chain: [{ resolved, tag, locator, best }],
+   *     closed: bool,    // true if any closed shadow root encountered
+   *     hasShadow: bool }
+   */
+  function detectShadowChain(target, composedPath) {
+    if (!target || !Array.isArray(composedPath)) {
+      return { chain: [], closed: false, hasShadow: false };
+    }
+
+    // Walk up via parentNode + host transitions
+    const hosts = [];
+    let node = target;
+    let closed = false;
+    let depth = 0;
+    const MAX_SHADOW_DEPTH = 10;
+
+    while (node && depth < MAX_SHADOW_DEPTH) {
+      const root = node.getRootNode && node.getRootNode();
+      if (root && root instanceof ShadowRoot) {
+        const host = root.host;
+        if (!host) break;
+        // Verify root is open — closed roots can still expose internal nodes
+        // via composedPath but host.shadowRoot returns null.
+        if (host.shadowRoot === null) {
+          closed = true;
+          hosts.unshift({ host, scope: root, openMode: false });
+          // Cannot ascend further reliably — closed root blocks query reuse
+          break;
+        }
+        hosts.unshift({ host, scope: root, openMode: true });
+        node = host;
+      } else {
+        break;
+      }
+      depth++;
+    }
+
+    if (!hosts.length) {
+      return { chain: [], closed: false, hasShadow: false };
+    }
+
+    // Build a locator for each host element relative to its parent scope.
+    const chain = hosts.map(({ host, openMode }, i) => {
+      if (!openMode) {
+        return {
+          resolved: false,
+          tag: host.tagName ? host.tagName.toLowerCase() : "",
+          note: "Closed shadow root — not queryable from outside",
+        };
+      }
+      const parentScope = i === 0 ? document : hosts[i - 1].scope;
+      const locators = buildLocatorsScoped(host, parentScope);
+      const best = (window.SmartLocator?.priority?.pickBest)
+        ? window.SmartLocator.priority.pickBest(locators)
+        : { type: "cssSelector", value: locators.css };
+      return {
+        resolved: true,
+        tag: host.tagName.toLowerCase(),
+        locators,
+        best,
+      };
+    });
+
+    return { chain, closed, hasShadow: true };
+  }
+
+  /**
+   * Scope-aware locator builder. The default utils generate from document;
+   * for shadow hosts we need locators relative to the host's parent scope
+   * (either document or another ShadowRoot).
+   *
+   * Falls back to standard utils when scope is the main document.
+   */
+  function buildLocatorsScoped(el, scope) {
+    if (!el) return { id: "", name: "", css: "", xpath: "", relativeXpath: "" };
+    const S = window.SmartLocator || {};
+    const isDoc = scope === document;
+
+    // ID and name are document-global but in shadow tree their uniqueness
+    // is scoped. We still report them for visibility but won't include them
+    // in best-locator selection unless unique within scope.
+    const idAttr = el.id || "";
+    const idUnique = idAttr && safeQueryAll(scope, `#${cssEscape(idAttr)}`).length === 1;
+
+    const nameAttr = el.getAttribute("name") || "";
+    const nameUnique = nameAttr && safeQueryAll(scope, `[name="${nameAttr}"]`).length === 1;
+
+    // CSS: prefer existing util when in document; for shadow use a simple
+    // tag.class fallback because the util uses document.querySelectorAll
+    // internally for uniqueness checks.
+    let css = "";
+    if (isDoc && S.css?.shortest) {
+      css = S.css.shortest(el);
+    } else {
+      css = buildShortCss(el, scope);
+    }
+
+    // XPath: only meaningful in document scope. Selenium does not support
+    // XPath inside shadow roots, so we leave xpath/relativeXpath empty
+    // for shadow-scoped elements.
+    let xpath = "", relativeXpath = "";
+    if (isDoc && S.xpath) {
+      xpath = S.xpath.absolute(el);
+      relativeXpath = S.xpath.relative(el);
+    }
+
+    return {
+      id: idUnique ? idAttr : "",
+      name: nameUnique ? nameAttr : "",
+      css,
+      xpath,
+      relativeXpath,
+    };
+  }
+
+  function safeQueryAll(scope, sel) {
+    try { return scope.querySelectorAll(sel); } catch (_) { return []; }
+  }
+
+  /**
+   * Build a short CSS selector unique within the given scope.
+   * Strategy: try id → testid/data-* → tag.class → tag.class:nth-of-type chain.
+   */
+  function buildShortCss(el, scope) {
+    if (!el || !el.tagName) return "";
+    const tag = el.tagName.toLowerCase();
+
+    if (el.id && !looksDynamicLocal(el.id)) {
+      const sel = `#${cssEscape(el.id)}`;
+      if (safeQueryAll(scope, sel).length === 1) return sel;
+    }
+    for (const a of ["data-testid", "data-test", "data-qa", "data-cy", "aria-label", "name", "placeholder"]) {
+      const v = el.getAttribute(a);
+      if (v && !looksDynamicLocal(v)) {
+        const sel = `${tag}[${a}="${v}"]`;
+        if (safeQueryAll(scope, sel).length === 1) return sel;
+      }
+    }
+    const cls = (el.getAttribute("class") || "").trim();
+    if (cls) {
+      const toks = cls.split(/\s+/).filter((c) => c && !looksDynamicLocal(c));
+      if (toks.length) {
+        const sel = tag + toks.map((t) => "." + cssEscape(t)).join("");
+        if (safeQueryAll(scope, sel).length === 1) return sel;
+      }
+    }
+    // Last resort: positional chain inside this scope
+    return positionalCss(el, scope);
+  }
+
+  function positionalCss(el, scope) {
+    const parts = [];
+    let node = el;
+    while (node && node !== scope && node.nodeType === 1) {
+      let part = node.tagName.toLowerCase();
+      if (node.id && !looksDynamicLocal(node.id)) {
+        parts.unshift(`${part}#${cssEscape(node.id)}`);
+        break;
+      }
+      let i = 1, sib = node.previousElementSibling;
+      while (sib) {
+        if (sib.tagName === node.tagName) i++;
+        sib = sib.previousElementSibling;
+      }
+      parts.unshift(`${part}:nth-of-type(${i})`);
+      node = node.parentNode;
+      // In shadow scope, parentNode can be ShadowRoot — stop there.
+      if (node && node.nodeType !== 1) break;
+    }
+    return parts.join(" > ");
+  }
+
+  function buildPayload(el, shadowInfo) {
     const element = extractElement(el);
-    const locators = buildLocators(el);
+    // If element lives inside a shadow tree, locators must be scoped to its
+    // immediate root, not the top document. detectShadowChain already gave us
+    // the inner-most ShadowRoot via the chain's last entry.
+    const inShadow = shadowInfo && shadowInfo.hasShadow && shadowInfo.chain.length > 0;
+    const scope = inShadow ? (el.getRootNode && el.getRootNode()) : document;
+    const locators = inShadow ? buildLocatorsScoped(el, scope) : buildLocators(el);
     const best = (window.SmartLocator?.priority?.pickBest)
       ? window.SmartLocator.priority.pickBest(locators)
       : { type: "cssSelector", value: locators.css };
 
+    // List detection only runs in document scope for now; sibling pattern
+    // inside shadow trees is supported by detectList because it uses
+    // element.parentElement which works inside shadow trees too.
     const listInfo = detectList(el);
 
+    const shadowChain = shadowInfo && shadowInfo.hasShadow ? shadowInfo.chain : [];
+    const shadowClosed = !!(shadowInfo && shadowInfo.closed);
+
     const javaCode = window.SmartLocator?.code?.javaSnippet
-      ? window.SmartLocator.code.javaSnippet(best, element)
+      ? window.SmartLocator.code.javaSnippet(best, element, null, shadowChain)
       : "";
     const javaListCode = (listInfo.isList && window.SmartLocator?.code?.javaListSnippet)
-      ? window.SmartLocator.code.javaListSnippet(listInfo.listLocator, element)
+      ? window.SmartLocator.code.javaListSnippet(listInfo.listLocator, element, null, shadowChain)
       : "";
     const pomCode = window.SmartLocator?.code?.pomClass
-      ? window.SmartLocator.code.pomClass(element, locators)
+      ? window.SmartLocator.code.pomClass(element, locators, null, shadowChain)
       : "";
 
     return {
@@ -517,6 +708,8 @@
       isList: listInfo.isList,
       listLocator: listInfo.listLocator || null,
       listCount: listInfo.count || 0,
+      shadowChain,
+      shadowClosed,
       javaCode,
       javaListCode,
       pomCode,
@@ -526,7 +719,9 @@
   /* ---------- Event handlers ---------- */
   function onMouseOver(e) {
     if (!inspecting || paused) return;
-    const raw = e.target;
+    // Use composedPath so we hover the real target inside open shadow roots.
+    const path = (e.composedPath && e.composedPath()) || [];
+    const raw = (path[0] && path[0].nodeType === 1) ? path[0] : e.target;
     if (!raw) return;
     if (raw.id === OVERLAY_ID || (raw.closest && raw.closest(`#${OVERLAY_ID}`))) return;
     if (isPanelEvent(e)) return;
@@ -543,7 +738,11 @@
   function onClick(e) {
     if (!inspecting) return;
 
-    const raw = e.target;
+    // Resolve the actual clicked element through shadow boundaries.
+    // composedPath()[0] returns the real target inside open shadow roots;
+    // e.target alone gets retargeted to the host.
+    const path = (e.composedPath && e.composedPath()) || [];
+    const raw = (path[0] && path[0].nodeType === 1) ? path[0] : e.target;
     if (!raw) return;
     if (isPanelEvent(e)) return;
 
@@ -557,7 +756,8 @@
 
     try {
       moveOverlayTo(t, true);
-      const payload = buildPayload(t);
+      const shadowInfo = detectShadowChain(t, path);
+      const payload = buildPayload(t, shadowInfo);
       payload.promoted = (t !== raw);
       payload.originalTag = raw.tagName ? raw.tagName.toLowerCase() : "";
       payload.mode = inspectMode;
@@ -824,20 +1024,21 @@
     payload.frameChain = chain || [];
     payload.fromSubframe = true;
 
-    // Regenerate Java + POM with frame context.
+    // Regenerate Java + POM with frame + shadow context.
+    const shadowChain = payload.shadowChain || [];
     if (window.SmartLocator?.code?.javaSnippet) {
       payload.javaCode = window.SmartLocator.code.javaSnippet(
-        payload.best, payload.element, payload.frameChain
+        payload.best, payload.element, payload.frameChain, shadowChain
       );
     }
     if (window.SmartLocator?.code?.pomClass) {
       payload.pomCode = window.SmartLocator.code.pomClass(
-        payload.element, payload.locators, payload.frameChain
+        payload.element, payload.locators, payload.frameChain, shadowChain
       );
     }
     if (payload.isList && payload.listLocator && window.SmartLocator?.code?.javaListSnippet) {
       payload.javaListCode = window.SmartLocator.code.javaListSnippet(
-        payload.listLocator, payload.element, payload.frameChain
+        payload.listLocator, payload.element, payload.frameChain, shadowChain
       );
     }
 

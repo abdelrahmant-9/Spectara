@@ -56,6 +56,11 @@ const els = {
   frameDepth: document.getElementById("frameDepth"),
   frameStatusPill: document.getElementById("frameStatusPill"),
 
+  shadowCard: document.getElementById("shadowCard"),
+  shadowChainList: document.getElementById("shadowChainList"),
+  shadowDepth: document.getElementById("shadowDepth"),
+  shadowStatusPill: document.getElementById("shadowStatusPill"),
+
   onboardBanner: document.getElementById("onboardBanner"),
   onboardClose: document.getElementById("onboardClose"),
   onboardShortcut: document.getElementById("onboardShortcut"),
@@ -365,6 +370,43 @@ function renderCapture(data) {
   els.metaText.textContent = (data.element.text || "").slice(0, 200) || "—";
 
   renderFrameChain(data.frameChain || []);
+  renderShadowChain(data.shadowChain || [], data.shadowClosed === true);
+}
+
+function renderShadowChain(chain, closed) {
+  const has = Array.isArray(chain) && chain.length > 0;
+  if (els.shadowStatusPill) els.shadowStatusPill.classList.toggle("hidden", !has);
+  if (!els.shadowCard || !els.shadowChainList) return;
+
+  if (!has) {
+    els.shadowCard.classList.add("hidden");
+    els.shadowChainList.innerHTML = "";
+    if (els.shadowDepth) els.shadowDepth.textContent = "";
+    return;
+  }
+
+  els.shadowCard.classList.remove("hidden");
+  if (els.shadowDepth) {
+    els.shadowDepth.textContent = `${chain.length} root${chain.length === 1 ? "" : "s"}` +
+      (closed ? " · contains closed root" : "");
+  }
+
+  els.shadowChainList.innerHTML = "";
+  chain.forEach((h) => {
+    const li = document.createElement("li");
+    if (h.resolved && h.best) {
+      const loc = document.createElement("div");
+      loc.className = "f-locator";
+      loc.textContent = `<${h.tag}>  →  By.${h.best.type} = ${h.best.value}`;
+      li.appendChild(loc);
+    } else {
+      const loc = document.createElement("div");
+      loc.className = "f-locator f-unresolved";
+      loc.textContent = h.note || "Closed shadow root — not queryable";
+      li.appendChild(loc);
+    }
+    els.shadowChainList.appendChild(li);
+  });
 }
 
 function renderFrameChain(chain) {
@@ -448,6 +490,13 @@ function renderCapturesList() {
       tag.title = "Element captured inside an iframe";
       li.appendChild(tag);
     }
+    if (Array.isArray(c.shadowChain) && c.shadowChain.length) {
+      const tag = document.createElement("span");
+      tag.className = "cap-shadow-tag";
+      tag.textContent = `shadow ×${c.shadowChain.length}`;
+      tag.title = "Element captured inside Shadow DOM";
+      li.appendChild(tag);
+    }
     li.appendChild(remove);
 
     li.addEventListener("click", () => {
@@ -521,6 +570,7 @@ function generateCombinedPom() {
   return [
     `import java.util.List;`,
     `import org.openqa.selenium.By;`,
+    `import org.openqa.selenium.SearchContext;`,
     `import org.openqa.selenium.WebDriver;`,
     `import org.openqa.selenium.WebElement;`,
     `import org.openqa.selenium.support.ui.Select;`,
@@ -557,33 +607,60 @@ function frameLeaveLines(chain) {
   return ["        driver.switchTo().defaultContent();"];
 }
 
+function shadowEnterLines(chain) {
+  if (!Array.isArray(chain) || !chain.length) return { lines: [], scope: "driver" };
+  const lines = [];
+  let scope = "driver";
+  chain.forEach((h, i) => {
+    const hostVar = `host${i + 1}`;
+    const ctxVar = `shadow${i + 1}`;
+    if (h.resolved && h.best && h.best.value) {
+      const inDoc = i === 0;
+      const expr = inDoc
+        ? byLiteral(h.best.type, h.best.value)
+        : `By.cssSelector("${escapeJavaStr(h.locators?.css || h.best.value)}")`;
+      lines.push(`        WebElement ${hostVar} = ${scope}.findElement(${expr});`);
+      lines.push(`        SearchContext ${ctxVar} = ${hostVar}.getShadowRoot();`);
+      scope = ctxVar;
+    } else {
+      lines.push(`        // SearchContext ${ctxVar} = /* closed shadow root: ${h.note || "unresolved"} */;`);
+    }
+  });
+  return { lines, scope };
+}
+
+function escapeJavaStr(s) {
+  return String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\r?\n/g, " ");
+}
+
 function pomMethodFor(c) {
   const fn = c.fieldName;
   const cap0 = cap(fn);
   const tag = (c.element.tag || "").toLowerCase();
-  const enter = frameEnterLines(c.frameChain);
-  const leave = frameLeaveLines(c.frameChain);
+  const enterF = frameEnterLines(c.frameChain);
+  const leaveF = frameLeaveLines(c.frameChain);
+  const { lines: enterS, scope } = shadowEnterLines(c.shadowChain);
 
   if (c.isList) {
     return [
       `    public List<WebElement> get${cap0}() {`,
-      ...enter,
-      `        List<WebElement> result = driver.findElements(${fn});`,
-      ...leave,
+      ...enterF, ...enterS,
+      `        List<WebElement> result = ${scope}.findElements(${fn});`,
+      ...leaveF,
       `        return result;`,
       `    }`,
       ``,
       `    public int ${fn}Count() {`,
-      ...enter,
-      `        int n = driver.findElements(${fn}).size();`,
-      ...leave,
+      ...enterF, ...enterS,
+      `        int n = ${scope}.findElements(${fn}).size();`,
+      ...leaveF,
       `        return n;`,
       `    }`,
       ``,
       `    public WebElement get${cap0}At(int index) {`,
-      ...enter,
-      `        WebElement el = driver.findElements(${fn}).get(index);`,
-      ...leave,
+      ...enterF, ...enterS,
+      `        WebElement el = ${scope}.findElements(${fn}).get(index);`,
+      ...leaveF,
       `        return el;`,
       `    }`,
     ].join("\n");
@@ -591,17 +668,17 @@ function pomMethodFor(c) {
   if (tag === "input" || tag === "textarea") {
     return [
       `    public void set${cap0}(String value) {`,
-      ...enter,
-      `        WebElement el = driver.findElement(${fn});`,
+      ...enterF, ...enterS,
+      `        WebElement el = ${scope}.findElement(${fn});`,
       `        el.clear();`,
       `        el.sendKeys(value);`,
-      ...leave,
+      ...leaveF,
       `    }`,
       ``,
       `    public String get${cap0}Value() {`,
-      ...enter,
-      `        String v = driver.findElement(${fn}).getAttribute("value");`,
-      ...leave,
+      ...enterF, ...enterS,
+      `        String v = ${scope}.findElement(${fn}).getAttribute("value");`,
+      ...leaveF,
       `        return v;`,
       `    }`,
     ].join("\n");
@@ -609,23 +686,23 @@ function pomMethodFor(c) {
   if (tag === "select") {
     return [
       `    public void select${cap0}(String visibleText) {`,
-      ...enter,
-      `        new Select(driver.findElement(${fn})).selectByVisibleText(visibleText);`,
-      ...leave,
+      ...enterF, ...enterS,
+      `        new Select(${scope}.findElement(${fn})).selectByVisibleText(visibleText);`,
+      ...leaveF,
       `    }`,
     ].join("\n");
   }
   return [
     `    public void click${cap0}() {`,
-    ...enter,
-    `        driver.findElement(${fn}).click();`,
-    ...leave,
+    ...enterF, ...enterS,
+    `        ${scope}.findElement(${fn}).click();`,
+    ...leaveF,
     `    }`,
     ``,
     `    public boolean is${cap0}Displayed() {`,
-    ...enter,
-    `        boolean v = driver.findElement(${fn}).isDisplayed();`,
-    ...leave,
+    ...enterF, ...enterS,
+    `        boolean v = ${scope}.findElement(${fn}).isDisplayed();`,
+    ...leaveF,
     `        return v;`,
     `    }`,
   ].join("\n");
@@ -704,6 +781,11 @@ function resetResults() {
   els.frameStatusPill?.classList.add("hidden");
   if (els.frameChainList) els.frameChainList.innerHTML = "";
   if (els.frameDepth) els.frameDepth.textContent = "";
+
+  els.shadowCard?.classList.add("hidden");
+  els.shadowStatusPill?.classList.add("hidden");
+  if (els.shadowChainList) els.shadowChainList.innerHTML = "";
+  if (els.shadowDepth) els.shadowDepth.textContent = "";
 }
 
 /* ---------------- Live messages ----------------

@@ -100,16 +100,76 @@
     return [`driver.switchTo().defaultContent();`];
   }
 
-  function javaSnippet(best, element, frameChain) {
+  /**
+   * Emit Selenium 4.4+ shadow root traversal lines.
+   *
+   * Selenium does not support XPath inside shadow roots — only CSS works
+   * via SearchContext.findElement(By.cssSelector(...)). The target locator
+   * itself must be CSS when shadow chain is non-empty; we enforce that
+   * at the snippet-emit level by coercing best to CSS if the chain is
+   * non-empty.
+   *
+   * Returns { setup: string[], scopeVar: string }
+   *   setup    — lines that declare host + shadow context vars
+   *   scopeVar — name of the final SearchContext variable to use for findElement
+   */
+  function emitShadowEnter(shadowChain) {
+    if (!Array.isArray(shadowChain) || !shadowChain.length) {
+      return { setup: [], scopeVar: "driver" };
+    }
+    const lines = [`// Enter ${shadowChain.length} shadow root${shadowChain.length === 1 ? "" : "s"}`];
+    let lastScope = "driver";
+    shadowChain.forEach((h, i) => {
+      const hostVar = `shadowHost${i + 1}`;
+      const ctxVar = `shadow${i + 1}`;
+      if (h.resolved && h.best && h.best.value) {
+        // Inside another shadow scope only CSS is valid; in document scope any locator type works.
+        const inDoc = i === 0;
+        const locExpr = inDoc
+          ? byCall(h.best.type, h.best.value)
+          : `By.cssSelector("${escapeJava(coerceCss(h))}")`;
+        lines.push(`WebElement ${hostVar} = ${lastScope}.findElement(${locExpr});`);
+        lines.push(`SearchContext ${ctxVar} = ${hostVar}.getShadowRoot();`);
+        lastScope = ctxVar;
+      } else {
+        lines.push(`// Shadow root ${i + 1}: ${h.note || "unresolved — closed root cannot be traversed from outside"}`);
+        lines.push(`// SearchContext ${ctxVar} = /* TODO: closed shadow root */;`);
+      }
+    });
+    return { setup: lines, scopeVar: lastScope };
+  }
+
+  /**
+   * Coerce a host locator to a CSS string when XPath was picked but
+   * the context is inside another shadow root (no XPath support).
+   */
+  function coerceCss(hostEntry) {
+    if (!hostEntry.locators) return "";
+    return hostEntry.locators.css || hostEntry.best?.value || "";
+  }
+
+  function javaSnippet(best, element, frameChain, shadowChain) {
     if (!best || !best.value) return "// No locator available";
     const varName = variableName(element);
     const tag = (element.tag || "").toLowerCase();
-    const call = byCall(best.type, best.value);
+    const inShadow = Array.isArray(shadowChain) && shadowChain.length > 0;
+
+    // When element lives inside a shadow root, force CSS (Selenium does not
+    // support XPath inside shadow). If best is xpath, fall back to a note.
+    let call;
+    if (inShadow && best.type === "xpath") {
+      call = `By.cssSelector("/* TODO: XPath not supported inside shadow DOM — provide a CSS selector */")`;
+    } else {
+      call = byCall(best.type, best.value);
+    }
 
     const lines = [];
-    lines.push(`// ${tag.toUpperCase()} — ${best.type}`);
+    lines.push(`// ${tag.toUpperCase()} — ${best.type}${inShadow ? " (inside shadow DOM)" : ""}`);
     lines.push(...emitFrameSwitchIn(frameChain));
-    lines.push(`WebElement ${varName} = driver.findElement(${call});`);
+
+    const { setup: shadowSetup, scopeVar } = emitShadowEnter(shadowChain);
+    lines.push(...shadowSetup);
+    lines.push(`WebElement ${varName} = ${scopeVar}.findElement(${call});`);
 
     if (tag === "input" || tag === "textarea") {
       lines.push(`${varName}.sendKeys("YOUR_VALUE");`);
@@ -125,7 +185,7 @@
     return lines.join("\n");
   }
 
-  function pomClass(element, locators, frameChain) {
+  function pomClass(element, locators, frameChain, shadowChain) {
     const className = derivePageName(element);
     const fieldName = variableName(element);
 
@@ -139,7 +199,7 @@
     if (locators.relativeXpath)
       fields.push(`    private final By ${fieldName}ByXpath = By.xpath("${escapeJava(locators.relativeXpath)}");`);
 
-    const action = pomAction(element, fieldName, frameChain);
+    const action = pomAction(element, fieldName, frameChain, shadowChain);
 
     // Optional frame-chain locator fields for documentation in the POM.
     const frameFields = [];
@@ -156,6 +216,7 @@
 
     return [
       `import org.openqa.selenium.By;`,
+      `import org.openqa.selenium.SearchContext;`,
       `import org.openqa.selenium.WebDriver;`,
       `import org.openqa.selenium.WebElement;`,
       ``,
@@ -193,17 +254,48 @@
     return [`${indent || "        "}driver.switchTo().defaultContent();`];
   }
 
-  function pomAction(element, fieldName, frameChain) {
+  /**
+   * Build shadow-entry lines inside a POM method body. Returns:
+   *   { lines: string[], scope: string }   scope = variable to use for findElement
+   */
+  function shadowEnterBody(shadowChain, indent) {
+    if (!Array.isArray(shadowChain) || !shadowChain.length) {
+      return { lines: [], scope: "driver" };
+    }
+    const ind = indent || "        ";
+    const lines = [];
+    let lastScope = "driver";
+    shadowChain.forEach((h, i) => {
+      const hostVar = `host${i + 1}`;
+      const ctxVar = `shadow${i + 1}`;
+      if (h.resolved && h.best && h.best.value) {
+        const inDoc = i === 0;
+        const locExpr = inDoc
+          ? byCall(h.best.type, h.best.value)
+          : `By.cssSelector("${escapeJava(coerceCss(h))}")`;
+        lines.push(`${ind}WebElement ${hostVar} = ${lastScope}.findElement(${locExpr});`);
+        lines.push(`${ind}SearchContext ${ctxVar} = ${hostVar}.getShadowRoot();`);
+        lastScope = ctxVar;
+      } else {
+        lines.push(`${ind}// SearchContext ${ctxVar} = /* closed shadow root: ${h.note || "unresolved"} */;`);
+      }
+    });
+    return { lines, scope: lastScope };
+  }
+
+  function pomAction(element, fieldName, frameChain, shadowChain) {
     const tag = (element.tag || "").toLowerCase();
     const methodSuffix = fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
     const enterFrame = frameSwitchInBody(frameChain);
     const leaveFrame = frameSwitchOutBody(frameChain);
+    const { lines: enterShadow, scope } = shadowEnterBody(shadowChain);
 
     if (tag === "input" || tag === "textarea") {
       return [
         `    public ${cap(fieldName)}Page set${methodSuffix}(String value) {`,
         ...enterFrame,
-        `        WebElement el = driver.findElement(${fieldName});`,
+        ...enterShadow,
+        `        WebElement el = ${scope}.findElement(${fieldName});`,
         `        el.clear();`,
         `        el.sendKeys(value);`,
         ...leaveFrame,
@@ -215,7 +307,8 @@
       return [
         `    public void select${methodSuffix}(String visibleText) {`,
         ...enterFrame,
-        `        new org.openqa.selenium.support.ui.Select(driver.findElement(${fieldName}))`,
+        ...enterShadow,
+        `        new org.openqa.selenium.support.ui.Select(${scope}.findElement(${fieldName}))`,
         `            .selectByVisibleText(visibleText);`,
         ...leaveFrame,
         `    }`,
@@ -224,7 +317,8 @@
     return [
       `    public void click${methodSuffix}() {`,
       ...enterFrame,
-      `        driver.findElement(${fieldName}).click();`,
+      ...enterShadow,
+      `        ${scope}.findElement(${fieldName}).click();`,
       ...leaveFrame,
       `    }`,
     ].join("\n");
@@ -267,6 +361,7 @@
     return [
       `import java.util.List;`,
       `import org.openqa.selenium.By;`,
+      `import org.openqa.selenium.SearchContext;`,
       `import org.openqa.selenium.WebDriver;`,
       `import org.openqa.selenium.WebElement;`,
       `import org.openqa.selenium.support.ui.Select;`,
@@ -303,29 +398,30 @@
     const fn = c.fieldName;
     const cap0 = cap(fn);
     const tag = (c.element.tag || "").toLowerCase();
-    const enter = frameSwitchInBody(c.frameChain);
-    const leave = frameSwitchOutBody(c.frameChain);
+    const enterF = frameSwitchInBody(c.frameChain);
+    const leaveF = frameSwitchOutBody(c.frameChain);
+    const { lines: enterS, scope } = shadowEnterBody(c.shadowChain);
 
     if (c.isList) {
       return [
         `    public List<WebElement> get${cap0}() {`,
-        ...enter,
-        `        List<WebElement> result = driver.findElements(${fn});`,
-        ...leave,
+        ...enterF, ...enterS,
+        `        List<WebElement> result = ${scope}.findElements(${fn});`,
+        ...leaveF,
         `        return result;`,
         `    }`,
         ``,
         `    public int ${fn}Count() {`,
-        ...enter,
-        `        int n = driver.findElements(${fn}).size();`,
-        ...leave,
+        ...enterF, ...enterS,
+        `        int n = ${scope}.findElements(${fn}).size();`,
+        ...leaveF,
         `        return n;`,
         `    }`,
         ``,
         `    public WebElement get${cap0}At(int index) {`,
-        ...enter,
-        `        WebElement el = driver.findElements(${fn}).get(index);`,
-        ...leave,
+        ...enterF, ...enterS,
+        `        WebElement el = ${scope}.findElements(${fn}).get(index);`,
+        ...leaveF,
         `        return el;`,
         `    }`,
       ].join("\n");
@@ -334,17 +430,17 @@
     if (tag === "input" || tag === "textarea") {
       return [
         `    public void set${cap0}(String value) {`,
-        ...enter,
-        `        WebElement el = driver.findElement(${fn});`,
+        ...enterF, ...enterS,
+        `        WebElement el = ${scope}.findElement(${fn});`,
         `        el.clear();`,
         `        el.sendKeys(value);`,
-        ...leave,
+        ...leaveF,
         `    }`,
         ``,
         `    public String get${cap0}Value() {`,
-        ...enter,
-        `        String v = driver.findElement(${fn}).getAttribute("value");`,
-        ...leave,
+        ...enterF, ...enterS,
+        `        String v = ${scope}.findElement(${fn}).getAttribute("value");`,
+        ...leaveF,
         `        return v;`,
         `    }`,
       ].join("\n");
@@ -352,23 +448,23 @@
     if (tag === "select") {
       return [
         `    public void select${cap0}(String visibleText) {`,
-        ...enter,
-        `        new Select(driver.findElement(${fn})).selectByVisibleText(visibleText);`,
-        ...leave,
+        ...enterF, ...enterS,
+        `        new Select(${scope}.findElement(${fn})).selectByVisibleText(visibleText);`,
+        ...leaveF,
         `    }`,
       ].join("\n");
     }
     return [
       `    public void click${cap0}() {`,
-      ...enter,
-      `        driver.findElement(${fn}).click();`,
-      ...leave,
+      ...enterF, ...enterS,
+      `        ${scope}.findElement(${fn}).click();`,
+      ...leaveF,
       `    }`,
       ``,
       `    public boolean is${cap0}Displayed() {`,
-      ...enter,
-      `        boolean v = driver.findElement(${fn}).isDisplayed();`,
-      ...leave,
+      ...enterF, ...enterS,
+      `        boolean v = ${scope}.findElement(${fn}).isDisplayed();`,
+      ...leaveF,
       `        return v;`,
       `    }`,
     ].join("\n");
@@ -377,15 +473,20 @@
   /**
    * Java snippet for collection (List<WebElement>).
    */
-  function javaListSnippet(listLocator, element, frameChain) {
+  function javaListSnippet(listLocator, element, frameChain, shadowChain) {
     if (!listLocator || !listLocator.value) return "// No list locator";
     const varBase = variableName(element).replace(/(Button|Input|Link|Item|Element|Row|Cell)$/, "");
     const varName = varBase + "Items";
-    const call = byCall(listLocator.type, listLocator.value);
+    const inShadow = Array.isArray(shadowChain) && shadowChain.length > 0;
+    const call = (inShadow && listLocator.type === "xpath")
+      ? `By.cssSelector("/* TODO: XPath not supported inside shadow DOM */")`
+      : byCall(listLocator.type, listLocator.value);
+    const { setup: shadowSetup, scopeVar } = emitShadowEnter(shadowChain);
     return [
-      `// Collection capture — siblings detected`,
+      `// Collection capture — siblings detected${inShadow ? " (inside shadow DOM)" : ""}`,
       ...emitFrameSwitchIn(frameChain),
-      `List<WebElement> ${varName} = driver.findElements(${call});`,
+      ...shadowSetup,
+      `List<WebElement> ${varName} = ${scopeVar}.findElements(${call});`,
       `System.out.println("Count: " + ${varName}.size());`,
       `for (WebElement item : ${varName}) {`,
       `    System.out.println(item.getText());`,

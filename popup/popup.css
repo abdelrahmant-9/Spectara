@@ -696,6 +696,36 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
+.captures-list .cap-shadow-tag {
+  background: color-mix(in srgb, var(--teal) 18%, transparent);
+  color: var(--teal);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* Shadow DOM card */
+.shadow-card { border-color: color-mix(in srgb, var(--teal) 40%, var(--hairline)); }
+.badge-shadow {
+  color: var(--teal);
+  border-color: color-mix(in srgb, var(--teal) 50%, transparent);
+}
+.shadow-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--teal) 18%, transparent);
+  color: var(--teal);
+  border: 1px solid color-mix(in srgb, var(--teal) 40%, transparent);
+  margin-left: 4px;
+}
 
 /* Fallback for color-mix (older browsers) — same look in modern Chrome */
 @supports not (color: color-mix(in srgb, red, blue)) {

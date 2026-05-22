@@ -71,6 +71,7 @@
               <span class="dot dot-idle" id="statusDot"></span>
               <span id="statusText">Idle</span>
               <span class="frame-pill hidden" id="frameStatusPill" title="Element captured inside an iframe">⌧ iframe</span>
+              <span class="shadow-pill hidden" id="shadowStatusPill" title="Element captured inside Shadow DOM">⌑ shadow</span>
             </span>
           </div>
         </div>
@@ -185,6 +186,14 @@
               <span class="frame-depth" id="frameDepth"></span>
             </div>
             <ol class="frame-chain" id="frameChainList"></ol>
+          </div>
+
+          <div class="card shadow-card hidden" id="shadowCard">
+            <div class="card-head">
+              <span class="badge badge-shadow">Shadow DOM</span>
+              <span class="frame-depth" id="shadowDepth"></span>
+            </div>
+            <ol class="frame-chain" id="shadowChainList"></ol>
           </div>
 
           <div class="card">

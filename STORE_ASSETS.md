@@ -100,11 +100,11 @@ PRIVACY & SECURITY
 
 This extension:
 • Does NOT collect, transmit, or sell any user data
-• Does NOT make any network requests
 • Does NOT use analytics, telemetry, or fingerprinting
-• Stores everything locally in chrome.storage.local
+• Stores all captures locally in chrome.storage.local
 • Is fully open source on GitHub (MIT license)
-• Works completely offline
+• Works completely offline for free users
+• Pro users only: sends one license-validation request per 24 hours to api.smartselenium.dev (license key only — no captures, no element data)
 
 ──────────────────────────────────────
 OPEN SOURCE
@@ -245,7 +245,7 @@ FIXED
 ## 10. FAQ Section (for landing page or docs)
 
 **Q: Is this a paid extension?**
-A: No. It is free and open source under the MIT license. A Pro tier with cloud sync and Playwright/Cypress codegen is on the roadmap, but the core extension will always stay free.
+A: The core extension is free and open source under the MIT license — all Selenium locator generation, Java codegen, POM generation, multi-capture, list detection, iframe and Shadow DOM support are included. An optional Pro tier ($4.99/mo) adds Playwright TypeScript + Python codegen, .java file export, and live locator validation. The core will always stay free.
 
 **Q: Does it work for Selenium Python or other languages?**
 A: Currently it generates Selenium Java only. Playwright (TypeScript + Python) and Cypress generators are on the V2 roadmap.
@@ -254,10 +254,10 @@ A: Currently it generates Selenium Java only. Playwright (TypeScript + Python) a
 A: Yes. Same-origin and cross-origin iframes are supported. The generated code automatically includes driver.switchTo().frame() chains.
 
 **Q: What about Shadow DOM?**
-A: Coming in v2. Open shadow roots will be supported with shadow-root-aware locator strategies.
+A: Open shadow roots are fully supported. The extension walks through host.shadowRoot chains and emits Selenium 4.4+ code with WebElement.getShadowRoot() + SearchContext.findElement(By.cssSelector(...)). Closed shadow roots are detected and reported as uninspectable.
 
 **Q: Does it collect any data?**
-A: No. The extension does not make any network requests, does not use analytics, and stores everything locally in chrome.storage.local. Read the privacy policy in the repo.
+A: No personal data, ever. Captures are stored locally in chrome.storage.local and never transmitted. No analytics, no telemetry, no fingerprinting. Free users make zero network requests. Pro users send one license-validation request per 24 hours (license key only). Source is fully auditable on GitHub.
 
 **Q: Will the locators work in CI?**
 A: Yes. The locators are standard Selenium 4 By.id / By.name / By.cssSelector / By.xpath calls. The extension's ranking algorithm skips dynamic IDs and framework prefixes, so the generated locators should be as stable as hand-crafted ones — often more so.
@@ -269,7 +269,7 @@ A: When you click a decorative element like an SVG icon or an empty span, the ex
 A: The popup shows all five locator strategies plus a "Best" pick. You can copy whichever one your test framework prefers. Right-click on an element with Alt held to capture the exact node without auto-promotion.
 
 **Q: Can I import / export captures?**
-A: Export to .java file and JSON sessions are coming in v1.4. For now, copy individual snippets or the full POM class with the Copy buttons.
+A: In multi-capture mode the captures strip has a "Copy all" button with three formats: Java field declarations (paste into a POM), human-readable locators list, and JSON. Pro tier adds an "Export .java" button that downloads the full POM as a real file. Cloud sync of captures across devices is planned for the next release.
 
 **Q: Is this affiliated with Selenium or Software Freedom Conservancy?**
 A: No. This is an independent open-source project. "Selenium" is used descriptively because the extension targets the Selenium WebDriver API.
@@ -322,7 +322,7 @@ Required because the extension's core function is generating locators for elemen
 | Does this extension collect or use location? | **No** |
 | Does this extension collect or use web history? | **No** |
 | Does this extension collect or use user activity? | **No** |
-| Does this extension collect or use website content? | **No (locators are generated locally and stored locally; no transmission)** |
+| Does this extension collect or use website content? | **No (locators are generated locally and stored locally; element data is never transmitted off-device. Pro license validation sends only the license key, no website content.)** |
 
 | Certification | Answer |
 |---------------|--------|

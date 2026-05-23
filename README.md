@@ -25,33 +25,40 @@ Writing locators is the most thankless part of test automation. You inherit a fl
 
 ## Features
 
-### Core (v1.2)
+### Free core (MIT)
 
-- **One-click capture** — click any element, get all five locator types
+- **Single-element capture** — click any element, get all five locator types
 - **Smart locator ranking** — automatically picks the most stable locator (skips dynamic IDs, framework hashes, random digits)
 - **Auto-promote** — click on a decorative SVG/icon and the extension walks up to the actionable `<button>` parent (hold **ALT** to override)
 - **Five locator types** — ID, Name, CSS Selector, Absolute XPath, Relative XPath
 - **Selenium Java snippet** — `WebElement … driver.findElement(...)` with smart variable naming (`emailInput`, `loginButton`)
-- **Page Object Model** — full POM class generated from element + URL slug
-- **Multi-element capture mode** — keep clicking to build a full POM in a single session, with a live capture list (per-item remove, click-to-view)
-- **List / collection detection** — click any item in a repeated list (table rows, menu items, product cards) and the extension auto-generates a `List<WebElement>` locator plus iteration snippet
-- **Combined POM** — multi-capture rebuilds one POM class with all fields + actions on every click; list captures get `getXxx()`, `xxxCount()`, `getXxxAt(int)` helpers
-- **Pause mode (P key)** — temporarily disable inspect to open hover-triggered popups, dropdowns, tooltips, accordions, modals; resume to capture items inside
-- **In-page floating panel** — Pause / Stop buttons always visible while inspecting, live capture counter in Multi mode
+- **Pause mode (P key)** — temporarily disable inspect to open hover popups, dropdowns, tooltips
+- **In-page floating panel** — Pause / Stop buttons always visible while inspecting
 - **macOS Tahoe-inspired UI** — liquid glass, vibrant accent, SF Pro typography, dark + light themes
-- **Compact + expanded popup states** — minimal hero when there's no history, full UI once you've captured
 - **One-click copy** on every locator and snippet
-- **Persistent history** — captures restored when popup reopens
-- **Keyboard shortcuts** — `ALT` for exact node, `P` to pause, `ESC` to cancel inspect
+- **Persistent history** — last capture restored when popup reopens
+- **Keyboard shortcuts** — `Ctrl/Cmd+Shift+L` open, `ALT` exact node, `P` pause, `ESC` cancel
+
+### Pro tier — **7-day free trial** · $4.99/mo or $39/yr (save 35%)
+
+- **Multi-element capture** — build a full Page Object Model in one inspect session, with a live capture list (per-item remove, click-to-view)
+- **Page Object Model generation** — single + combined POM classes, smart `emailInput` / `loginButton` naming, action methods (`set*`, `click*`, `is*Displayed`, `select*`, `get*List`, `*Count`, `get*At`)
+- **iframe traversal** — generated code includes `driver.switchTo().frame(...)` chains for nested same-origin and cross-origin iframes
+- **Shadow DOM traversal** — Selenium 4.4+ `WebElement.getShadowRoot()` + `SearchContext.findElement` chained through open shadow roots
+- **List / collection detection** — click one item in a table or grid → `List<WebElement>` locator + iteration snippet + POM list helpers
+- **Playwright TypeScript + Python codegen** — `page.locator()`, `getByRole`, `getByLabel`, `getByTestId`, `frameLocator()`, snake_case Python POMs
+- **Export full POM as `.java` file** — one-click download with derived filename
+- **Live locator validation** — ✓/⚠/✗ badges on each card showing live `querySelectorAll` count on the page
+- **Cypress codegen** *(coming soon)*
+- **Cloud sync of captures across devices** *(coming soon)*
 
 ### Roadmap (v2.0)
 
-- [ ] iframe + Shadow DOM traversal
-- [ ] Locator validation (count matches on the page)
-- [ ] Export full POM as `.java` file download
-- [ ] Playwright + Cypress code generators
+- [ ] Locator validation across frame + shadow chain
 - [ ] LLM-powered assertion + action suggestions
-- [ ] Chrome Web Store listing
+- [ ] Team workspaces with shared POM library
+- [ ] WebdriverIO code generator
+- [ ] Firefox + Edge Add-ons store listings
 
 ---
 
@@ -356,20 +363,25 @@ cd smart-selenium-locator-generator
 **Core is open source under MIT.** Official Pro builds include licensed premium features and future cloud capabilities.
 
 ### What's in the free core (MIT)
-- Element inspect, capture, and highlight
+- Single-element inspect, capture, and highlight
 - Five locator strategies (ID, Name, CSS, XPath, Relative XPath)
 - Smart Best-Locator ranking + dynamic-value detection
-- Selenium Java snippet generation
-- Page Object Model class generation
-- Multi-capture, list detection, iframe + Shadow DOM traversal
-- Pause mode, auto-promote, copy buttons, dark/light themes
+- Selenium Java snippet generation (single element)
+- Auto-promote, Pause mode, copy buttons, dark/light themes
+- ALT exact-node modifier, P pause, ESC cancel
 
-### What's in the optional Pro tier ($4.99/mo)
+### What's in the optional Pro tier ($4.99/mo or $39/yr — save 35%)
+- Multi-element capture (build a full POM in one inspect session)
+- Page Object Model class generation (single + combined)
+- iframe traversal with `driver.switchTo().frame()` chains
+- Shadow DOM traversal with Selenium 4.4+ `getShadowRoot()`
+- List / collection detection → `List<WebElement>`
 - Playwright TypeScript + Python codegen
 - Export full POM as `.java` file
 - Live locator validation (uniqueness + match count)
 - Cypress codegen *(coming soon)*
 - Cloud sync of captures across devices *(coming soon, server-side)*
+- **7-day free trial** — no card required
 
 The Pro module source lives in this same public repository under `pro/` for full transparency. The official Chrome Web Store build gates these features behind a client-side license check validated against our backend. Self-builders are free to fork and modify under MIT terms — paying customers are supporting ongoing development, official Web Store auto-updates, priority support, and the upcoming server-side features (cloud sync, team workspaces) that cannot be replicated without the backend.
 

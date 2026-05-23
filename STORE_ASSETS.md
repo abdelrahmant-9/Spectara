@@ -44,12 +44,11 @@ Click any element on any webpage and instantly receive:
 • Five locator strategies (ID, Name, CSS Selector, Absolute XPath, Relative XPath)
 • A "Best Locator" pick, ranked by stability — dynamic IDs and framework-generated classes are automatically skipped
 • A ready-to-paste Selenium Java snippet
-• A complete Page Object Model class generated from the URL slug
-• A List<WebElement> collection locator when the element is part of a repeating list
-• Full iframe support — generated code includes driver.switchTo().frame(...) chains automatically
+
+That's the free tier. The optional Pro tier ($4.99/mo, 7-day free trial) adds multi-element capture, Page Object Model generation, iframe + Shadow DOM traversal, Playwright codegen, .java file export, and live locator validation.
 
 ──────────────────────────────────────
-KEY FEATURES
+FREE TIER (open-core, MIT)
 ──────────────────────────────────────
 
 ONE-CLICK CAPTURE
@@ -61,29 +60,48 @@ The extension scans every candidate locator on the element and skips the ones th
 AUTO-PROMOTE
 Clicking on a decorative SVG, icon, or empty span automatically promotes the selection to the nearest actionable parent (button, link, input). Hold Alt to disable.
 
-MULTI-CAPTURE MODE
-Click multiple elements in one inspect session. The extension builds a complete POM class with all fields and methods — no copy-paste assembly.
-
-LIST DETECTION
-Click any item in a table, dropdown, menu, or product grid. The extension detects sibling patterns and generates a List<WebElement> locator plus an iteration snippet.
-
 PAUSE MODE (P key)
 Some elements only exist after a hover or click opens a popup (dropdowns, tooltips, custom menus). Pause mode disables capture so you can interact with the page naturally, then resumes when you press P again.
 
-IFRAME SUPPORT
-Same-origin and cross-origin iframes are supported through Chrome's per-frame content script model. Generated Java and POM code includes driver.switchTo().frame() chains so your tests work out of the box.
-
 MODERN, ISOLATED UI
 The in-page status panel runs inside a Shadow DOM root, so site CSS cannot break our overlay and our crosshair cursor cannot bleed into your page. The popup uses macOS Tahoe-inspired liquid-glass styling with dark and light themes.
-
-OS-AWARE KEYBOARD HINTS
-Shows ⌥ Option on macOS and Alt on Windows / Linux — small detail, big polish.
 
 KEYBOARD SHORTCUTS
 • Ctrl/Cmd + Shift + L — open the extension
 • Alt + click — capture exact element (no auto-promote)
 • P — pause / resume inspect
 • Esc — cancel inspect
+
+──────────────────────────────────────
+PRO TIER — 7-DAY FREE TRIAL · $4.99/mo or $39/yr (save 35%)
+──────────────────────────────────────
+
+MULTI-CAPTURE MODE
+Click multiple elements in one inspect session. The extension builds a complete Page Object Model class with all fields and action methods — no copy-paste assembly.
+
+PAGE OBJECT MODEL GENERATION
+Single and combined POM classes with smart variable naming (emailInput, loginButton), action helpers (setX, clickX, isXDisplayed, selectX, getXList, xCount, getXAt), and proper Selenium 4 imports.
+
+IFRAME TRAVERSAL
+Same-origin and cross-origin iframes via Chrome's per-frame content script model. Generated code includes driver.switchTo().frame() chains so your tests work out of the box on nested iframe forms (payment widgets, embedded apps, etc.).
+
+SHADOW DOM TRAVERSAL
+Open shadow roots are walked via host.shadowRoot chains. Generated code uses Selenium 4.4+ WebElement.getShadowRoot() + SearchContext.findElement for clean cross-shadow access. Closed shadow roots are detected and reported.
+
+LIST / COLLECTION DETECTION
+Click one item in a table, dropdown, menu, or product grid. The extension detects sibling patterns and generates a List<WebElement> locator plus an iteration snippet and POM list helpers.
+
+PLAYWRIGHT CODEGEN
+TypeScript and Python snippets with page.locator(), getByRole, getByLabel, getByTestId, frameLocator() for iframes, and locator() chaining through shadow boundaries.
+
+EXPORT .JAVA FILE
+One-click download of the full POM as a real .java file with the derived class name as the filename.
+
+LIVE LOCATOR VALIDATION
+Each locator card shows a live match-count badge — ✓ unique, ⚠ N matches, ✗ broken — by querying the page DOM in real time.
+
+7-DAY FREE TRIAL
+No credit card required. One-shot, local. Click "Start free trial" inside the Pro tab.
 
 ──────────────────────────────────────
 WHO IT'S FOR
@@ -173,10 +191,10 @@ Long-tail (for blog / dev.to articles):
 **Field max: 80 characters.**
 
 ```
-Selenium locators + Java POM from one click. Free MIT core + optional Pro.
+Free Selenium locators from one click. Pro $4.99/mo: POM, iframe, Playwright.
 ```
 
-(73 characters)
+(78 characters)
 
 ---
 
@@ -198,16 +216,22 @@ Used in the Chrome Web Store screenshot carousel. **Field max: 80 chars each.**
 For LinkedIn launch post, Product Hunt, landing page hero.
 
 ```
+FREE:
+✓ Single-element capture
 ✓ Five locator strategies + Smart Best-Locator ranking
-✓ Selenium Java snippet + full Page Object Model in one click
-✓ Multi-element capture builds a complete POM in one session
-✓ List / collection detection → List<WebElement>
-✓ iframe traversal with driver.switchTo().frame() chains
-✓ Pause mode for hover popups, dropdowns, tooltips
+✓ Selenium Java snippet
+✓ Auto-promote, Pause mode, ALT exact node
 ✓ Dark + light themes, macOS Tahoe-inspired UI
-✓ Zero data collection, zero network requests, fully offline
-✓ Open-core: MIT-licensed free core + optional Pro tier
-✓ Free for self-builders, $4.99/mo for the official Pro build
+
+PRO (7-day free trial · $4.99/mo or $39/yr — save 35%):
+✓ Multi-element capture (full POM in one session)
+✓ Page Object Model generation
+✓ iframe traversal + driver.switchTo().frame()
+✓ Shadow DOM traversal + getShadowRoot()
+✓ Playwright TypeScript + Python codegen
+✓ Export full POM as .java file
+✓ Live locator validation
+✓ Cypress codegen + cloud sync (coming soon)
 ```
 
 ---
@@ -245,7 +269,7 @@ FIXED
 ## 10. FAQ Section (for landing page or docs)
 
 **Q: Is this a paid extension?**
-A: It uses an open-core model. The core is open source under MIT — all Selenium locator generation, Java codegen, POM generation, multi-capture, list detection, iframe and Shadow DOM support are free and always will be. An optional Pro tier ($4.99/mo) adds Playwright TypeScript + Python codegen, .java file export, live locator validation, and upcoming server-side features like cloud sync. Official Pro builds are distributed through the Chrome Web Store; self-builders can fork the public source under MIT terms.
+A: It uses an open-core model with a 7-day free trial on Pro. The free tier (open source under MIT) covers single-element capture, all five locator strategies, smart best-locator ranking, and Selenium Java snippet generation — enough to replace your current "right-click → copy XPath" workflow. The Pro tier ($4.99/mo or $39/yr — save 35%) adds multi-capture + full Page Object Model generation, iframe + Shadow DOM traversal, Playwright TypeScript and Python codegen, .java file export, live locator validation, and upcoming cloud sync. Start the 7-day free trial inside the Pro tab — no credit card required.
 
 **Q: Does it work for Selenium Python or other languages?**
 A: Currently it generates Selenium Java only. Playwright (TypeScript + Python) and Cypress generators are on the V2 roadmap.

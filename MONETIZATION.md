@@ -10,9 +10,9 @@ The principle: **the current extension stays a self-contained free tool**. Pro f
 
 | Tier | Price | Features |
 |------|-------|----------|
-| **Free** (current) | $0 | Single capture, locators, Java codegen, multi-capture, list detection, iframe support, pause mode |
-| **Pro** | $4.99 / mo or $39 / yr | Playwright + Cypress codegen, POM .java export, Shadow DOM traversal, AI assertions, cloud sync of captures, locator validation engine, priority email support |
-| **Team** | $199 / yr per 5 seats | Pro + shared POM library + Slack export + admin dashboard |
+| **Free** | $0 | Single-element capture, 5 locator strategies + smart ranking, Selenium Java snippet, auto-promote, Pause mode, themes, keyboard shortcuts |
+| **Pro** | **$4.99/mo** or **$39/yr** (save 35%) · **7-day free trial** | Multi-element capture, POM generation (single + combined), iframe traversal, Shadow DOM traversal, list detection, Playwright TS + Python codegen, export .java, live locator validation, Cypress + cloud sync (soon), priority email support |
+| **Team** | $199 / yr per 5 seats | Pro + shared POM library + Slack/Jira export + admin dashboard |
 | **Enterprise** | Custom | Team + SSO + private cloud + on-prem option + SLA |
 
 ---

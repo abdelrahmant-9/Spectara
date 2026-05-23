@@ -25,7 +25,7 @@ Smart Selenium Locator Generator is a Chrome browser extension built for Quality
 
 The tool injects an inspect mode into any webpage, captures elements with a single click, ranks five different locator strategies by stability, and generates production-ready Selenium Java code plus a full Page Object Model class. It supports multi-element capture, automatic list/collection detection, and a Pause mode for grabbing items inside hover-triggered popups.
 
-Built with vanilla JavaScript on Chrome Manifest V3, zero dependencies. **Open-core model**: the core is MIT-licensed and fully public on GitHub; an optional Pro tier ($4.99/mo) adds Playwright codegen, `.java` export, locator validation, and upcoming server-side features.
+Built with vanilla JavaScript on Chrome Manifest V3, zero dependencies. **Open-core model**: the free core (MIT, fully public on GitHub) covers single-element capture, 5 locator strategies, smart ranking, and Selenium Java snippets. The Pro tier — **$4.99/mo or $39/yr (save 35%), 7-day free trial** — adds multi-element capture, full Page Object Model generation, iframe + Shadow DOM traversal, Playwright codegen, `.java` export, live locator validation, and upcoming server-side features (cloud sync, team workspaces).
 
 **Status:** v1.2 released. GitHub public. No paid users yet. Positioned for Chrome Web Store launch + freemium SaaS monetization.
 

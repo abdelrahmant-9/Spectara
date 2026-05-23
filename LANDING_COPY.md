@@ -19,7 +19,8 @@ Click any element on any webpage and instantly get stable Selenium locators, Jav
 
 **CTA buttons**
 - Primary: `Install free on Chrome` → Chrome Web Store URL
-- Secondary: `Get Pro · $4.99/mo` → LemonSqueezy checkout URL
+- Secondary: `Start 7-day Pro trial` → Chrome Web Store URL (trial starts inside extension)
+- Tertiary (small): `See pricing — $4.99/mo or $39/yr` → anchor to pricing block
 
 **Trust line under CTAs**
 ```
@@ -108,14 +109,18 @@ This is the same pattern used by VS Code, GitLab, Sentry, and Bitwarden.
 
 **Two columns**
 
-| Free core (MIT) | Pro ($4.99/mo) |
-|-----------------|----------------|
-| Single + multi capture | Playwright codegen (TS + Python) |
-| 5 locator strategies | Export full POM as .java file |
-| Selenium Java + POM codegen | Live locator validation |
-| iframe + Shadow DOM | Cypress codegen *(coming soon)* |
-| Pause mode, auto-promote | Cloud sync of captures *(coming soon)* |
-| Dark + light themes | Priority email support |
+| Free core (MIT) | Pro — 7-day trial · $4.99/mo or $39/yr |
+|-----------------|----------------------------------------|
+| Single-element capture | Multi-element capture |
+| 5 locator strategies | Page Object Model generation |
+| Smart best-locator ranking | iframe traversal + switchTo().frame() |
+| Selenium Java snippet | Shadow DOM traversal + getShadowRoot() |
+| Auto-promote + Pause mode | List / collection detection |
+| Dark + light themes | Playwright TypeScript + Python codegen |
+| Keyboard shortcuts | Export full POM as .java file |
+| | Live locator validation |
+| | Cypress codegen *(coming soon)* |
+| | Cloud sync of captures *(coming soon)* |
 
 ---
 
@@ -123,17 +128,21 @@ This is the same pattern used by VS Code, GitLab, Sentry, and Bitwarden.
 
 **Free**
 - $0 forever
-- All core features
-- Self-installable from GitHub
+- Single-element capture
+- 5 locator strategies + ranking
+- Selenium Java snippet
 - Community support via GitHub Issues
 - CTA: `Install free on Chrome`
 
-**Pro**
-- $4.99 / month or $39 / year
+**Pro · 7-day free trial**
+- **$4.99 / month** — cancel anytime
+- **$39 / year** — save 35% (~$3.25/mo)
 - Everything in Free
-- Plus all Pro features above
+- Plus multi-capture, POM, iframe, Shadow DOM, Playwright codegen, .java export, live validation
 - Priority email support
-- CTA: `Get Pro`
+- Cloud sync + Cypress (coming soon)
+- CTA: `Start free trial` (primary) · `Buy Pro` (secondary)
+- 14-day refund
 
 ---
 

@@ -33,7 +33,7 @@ Tool recommendation: **Figma** (free) with the 1280×800 frame template. Use mac
 │  │  button        │         │   etc.           │         │
 │  └────────────────┘         └──────────────────┘         │
 │                                                          │
-│  [smart selenium logo]  Free · Open Source · No tracking │
+│  [smart selenium logo]  Free MIT Core · Open-Core · No tracking │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -236,7 +236,7 @@ Editorial banner for "Editor's Picks" placement. Skip until accepted into editor
 │                                                          │
 │  Stop writing locators by hand. Click an element. Done. │
 │                                                          │
-│              Free · Open Source · Manifest V3            │
+│              Free Core · Open-Core · Manifest V3         │
 │                                                          │
 └──────────────────────────────────────────────────────────┘
 ```

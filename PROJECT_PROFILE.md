@@ -5,7 +5,7 @@
 
 **A Chrome extension that turns 30 minutes of locator hunting into 30 seconds of clicking.**
 
-`v1.2` · `Manifest V3` · `MIT License` · `Open Source`
+`v1.3` · `Manifest V3` · `MIT Core` · `Open-Core`
 
 [GitHub](https://github.com/abdelrahmant-9/smart-selenium-locator-generator)
 
@@ -25,7 +25,7 @@ Smart Selenium Locator Generator is a Chrome browser extension built for Quality
 
 The tool injects an inspect mode into any webpage, captures elements with a single click, ranks five different locator strategies by stability, and generates production-ready Selenium Java code plus a full Page Object Model class. It supports multi-element capture, automatic list/collection detection, and a Pause mode for grabbing items inside hover-triggered popups.
 
-Built with vanilla JavaScript on Chrome Manifest V3, zero dependencies, fully open source.
+Built with vanilla JavaScript on Chrome Manifest V3, zero dependencies. **Open-core model**: the core is MIT-licensed and fully public on GitHub; an optional Pro tier ($4.99/mo) adds Playwright codegen, `.java` export, locator validation, and upcoming server-side features.
 
 **Status:** v1.2 released. GitHub public. No paid users yet. Positioned for Chrome Web Store launch + freemium SaaS monetization.
 
@@ -202,7 +202,7 @@ Cheaper than SelectorsHub Pro. Faster UX than DevTools. Smarter than ChroPath. J
 5. **Shadow DOM-isolated UI** — never breaks on hostile page CSS
 6. **OS-aware** — proper ⌥ Option vs Alt labels (small detail, big polish signal)
 7. **Zero dependencies** — vanilla JS, fast load, no bloat
-8. **Open source** — trust signal, community contributions, future acquihire optionality
+8. **Open-core** — core is MIT-public for trust + community contributions; Pro layer monetizes convenience + server-side capabilities
 
 ---
 
@@ -242,7 +242,7 @@ smart-selenium-locator-generator/
 - **Manifest V3:** future-proof, Chrome's mandatory standard from 2024
 - **Shadow DOM:** absolute style + event isolation from arbitrary pages
 - **Service worker for storage:** captures persist across popup-close cycles
-- **MIT license:** maximum adoption, no legal friction
+- **MIT core license + open-core layering:** maximum adoption, no legal friction; Pro features layered with a client-side license check and a tiny license-validation backend
 
 ### Performance
 

@@ -102,7 +102,7 @@ This extension:
 • Does NOT collect, transmit, or sell any user data
 • Does NOT use analytics, telemetry, or fingerprinting
 • Stores all captures locally in chrome.storage.local
-• Is fully open source on GitHub (MIT license)
+• Core is open source under MIT on GitHub (open-core model)
 • Works completely offline for free users
 • Pro users only: sends one license-validation request per 24 hours to api.smartselenium.dev (license key only — no captures, no element data)
 
@@ -110,7 +110,7 @@ This extension:
 OPEN SOURCE
 ──────────────────────────────────────
 
-MIT licensed. Source code, issues, and contributions welcome:
+Open-core model. Core is MIT-licensed and fully public. Official Pro builds include licensed premium features and future cloud capabilities. Source code, issues, and contributions welcome:
 https://github.com/abdelrahmant-9/smart-selenium-locator-generator
 
 ──────────────────────────────────────
@@ -173,10 +173,10 @@ Long-tail (for blog / dev.to articles):
 **Field max: 80 characters.**
 
 ```
-Selenium locators + Java POM, generated from a click. Free. Open source.
+Selenium locators + Java POM from one click. Free MIT core + optional Pro.
 ```
 
-(72 characters)
+(73 characters)
 
 ---
 
@@ -206,8 +206,8 @@ For LinkedIn launch post, Product Hunt, landing page hero.
 ✓ Pause mode for hover popups, dropdowns, tooltips
 ✓ Dark + light themes, macOS Tahoe-inspired UI
 ✓ Zero data collection, zero network requests, fully offline
-✓ Open source — MIT license
-✓ Free
+✓ Open-core: MIT-licensed free core + optional Pro tier
+✓ Free for self-builders, $4.99/mo for the official Pro build
 ```
 
 ---
@@ -245,7 +245,7 @@ FIXED
 ## 10. FAQ Section (for landing page or docs)
 
 **Q: Is this a paid extension?**
-A: The core extension is free and open source under the MIT license — all Selenium locator generation, Java codegen, POM generation, multi-capture, list detection, iframe and Shadow DOM support are included. An optional Pro tier ($4.99/mo) adds Playwright TypeScript + Python codegen, .java file export, and live locator validation. The core will always stay free.
+A: It uses an open-core model. The core is open source under MIT — all Selenium locator generation, Java codegen, POM generation, multi-capture, list detection, iframe and Shadow DOM support are free and always will be. An optional Pro tier ($4.99/mo) adds Playwright TypeScript + Python codegen, .java file export, live locator validation, and upcoming server-side features like cloud sync. Official Pro builds are distributed through the Chrome Web Store; self-builders can fork the public source under MIT terms.
 
 **Q: Does it work for Selenium Python or other languages?**
 A: Currently it generates Selenium Java only. Playwright (TypeScript + Python) and Cypress generators are on the V2 roadmap.

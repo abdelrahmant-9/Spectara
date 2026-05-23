@@ -4,7 +4,8 @@
 
 **A Chrome extension that captures any element on any webpage and instantly generates Selenium Java locators, code snippets, and Page Object Model classes.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/Core-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Model: Open-Core](https://img.shields.io/badge/Model-Open--Core-43B02A)](#license--open-core-model)
 [![Manifest V3](https://img.shields.io/badge/Chrome-Manifest_V3-4285F4?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![Selenium](https://img.shields.io/badge/Selenium-Java-43B02A?logo=selenium&logoColor=white)](https://www.selenium.dev/)
@@ -350,7 +351,29 @@ cd smart-selenium-locator-generator
 
 ---
 
-## License
+## License & Open-Core Model
+
+**Core is open source under MIT.** Official Pro builds include licensed premium features and future cloud capabilities.
+
+### What's in the free core (MIT)
+- Element inspect, capture, and highlight
+- Five locator strategies (ID, Name, CSS, XPath, Relative XPath)
+- Smart Best-Locator ranking + dynamic-value detection
+- Selenium Java snippet generation
+- Page Object Model class generation
+- Multi-capture, list detection, iframe + Shadow DOM traversal
+- Pause mode, auto-promote, copy buttons, dark/light themes
+
+### What's in the optional Pro tier ($4.99/mo)
+- Playwright TypeScript + Python codegen
+- Export full POM as `.java` file
+- Live locator validation (uniqueness + match count)
+- Cypress codegen *(coming soon)*
+- Cloud sync of captures across devices *(coming soon, server-side)*
+
+The Pro module source lives in this same public repository under `pro/` for full transparency. The official Chrome Web Store build gates these features behind a client-side license check validated against our backend. Self-builders are free to fork and modify under MIT terms — paying customers are supporting ongoing development, official Web Store auto-updates, priority support, and the upcoming server-side features (cloud sync, team workspaces) that cannot be replicated without the backend.
+
+This is the **open-core model** used by projects like VS Code, GitLab, Sentry, and Bitwarden.
 
 MIT © [Abdelrahman Tarek](https://github.com/abdelrahmant-9)
 

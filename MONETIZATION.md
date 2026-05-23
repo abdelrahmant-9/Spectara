@@ -40,7 +40,7 @@ These constraints rule out:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ Chrome Extension (open source, MIT)                     │
+│ Chrome Extension (open-core, MIT core)                  │
 │                                                         │
 │  ┌──────────────┐    ┌──────────────┐                   │
 │  │  Free core   │    │  Pro module  │  loaded only      │

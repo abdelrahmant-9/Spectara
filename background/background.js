@@ -20,6 +20,8 @@ import {
   getLicenseStatus,
   getLicenseRaw,
   isPro,
+  startTrial,
+  getTrialStatus,
 } from "./license.js";
 
 const STATE_KEY = "smart_locator_state";
@@ -86,6 +88,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     isPro()
       .then((b) => sendResponse({ pro: b }))
       .catch(() => sendResponse({ pro: false }));
+    return true;
+  }
+  if (msg.type === "TRIAL_START") {
+    startTrial()
+      .then((r) => sendResponse(r))
+      .catch((err) => sendResponse({ ok: false, reason: String(err) }));
+    return true;
+  }
+  if (msg.type === "TRIAL_STATUS") {
+    getTrialStatus()
+      .then((r) => sendResponse(r))
+      .catch(() => sendResponse({ active: false, used: false }));
     return true;
   }
 });

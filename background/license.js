@@ -20,8 +20,10 @@
  */
 
 const LICENSE_KEY = "smart_locator_license";
+const TRIAL_KEY = "smart_locator_trial";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const GRACE_MS = 30 * 24 * 60 * 60 * 1000;
+const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 const API_BASE = "https://api.smartselenium.dev"; // update if you bind a different domain
 
 // Two accepted formats:
@@ -172,10 +174,39 @@ export async function getLicenseStatus() {
   return rec;
 }
 
-/** Convenience wrapper for feature gates: returns a boolean. */
+/** Convenience wrapper for feature gates: true if license OR active trial. */
 export async function isPro() {
   const s = await getLicenseStatus();
-  return s.valid === true && !!s.tier;
+  if (s.valid === true && !!s.tier) return true;
+  const t = await getTrialStatus();
+  return t.active === true;
+}
+
+/* ---------------- Free 7-day trial ----------------
+ * One-shot trial tracked locally only. Storage:
+ *   smart_locator_trial: { startedAt, endsAt, used }
+ *
+ * Honor-system enforcement — a user who clears chrome.storage.local can
+ * trigger the trial again. Acceptable for a $4.99 product; preventing
+ * abuse would require server-side device fingerprinting which we
+ * deliberately do not do for privacy reasons.
+ */
+export async function startTrial() {
+  const cur = await getTrialStatus();
+  if (cur.used) return { ok: false, reason: "already-used", ...cur };
+  const now = Date.now();
+  const rec = { startedAt: now, endsAt: now + TRIAL_DURATION_MS, used: true };
+  await chrome.storage.local.set({ [TRIAL_KEY]: rec });
+  return { ok: true, ...rec, active: true };
+}
+
+export async function getTrialStatus() {
+  const stored = await chrome.storage.local.get(TRIAL_KEY);
+  const t = stored[TRIAL_KEY];
+  if (!t || !t.startedAt) return { used: false, active: false };
+  const now = Date.now();
+  const active = t.endsAt > now;
+  return { ...t, active };
 }
 
 /* ---------------- Internals ---------------- */

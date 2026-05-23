@@ -901,6 +901,125 @@ html::-webkit-scrollbar { width: 0; height: 0; }
   font-size: 13px;
 }
 
+/* Monthly / yearly pricing tiles */
+.price-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 4px 0 12px;
+}
+.price-tile {
+  position: relative;
+  background: var(--surface-inset);
+  border: 1.5px solid var(--hairline);
+  border-radius: var(--radius-md);
+  padding: 10px 8px;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, transform 0.04s;
+  text-align: center;
+  font-family: var(--font-ui);
+  color: var(--text);
+}
+.price-tile:hover { background: var(--surface); }
+.price-tile.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+.price-tile-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+.price-tile-amount {
+  font-size: 18px;
+  font-weight: 800;
+  margin-top: 4px;
+  letter-spacing: -0.02em;
+}
+.price-tile-amount span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.price-tile-sub {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+.price-tile-badge {
+  position: absolute;
+  top: -8px;
+  right: 6px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: white;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
+}
+
+/* Trial button (less prominent than buy) */
+.trial-btn {
+  width: 100%;
+  background: transparent;
+  color: var(--accent);
+  border: 1px dashed color-mix(in srgb, var(--accent) 50%, transparent);
+  margin-top: 4px;
+  font-size: 12px;
+}
+.trial-btn:hover:not(:disabled) {
+  background: var(--accent-soft);
+  border-style: solid;
+}
+.trial-btn:disabled {
+  color: var(--text-tertiary);
+  border-color: var(--hairline);
+  cursor: not-allowed;
+}
+.trial-note {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.trial-note.active { color: var(--accent); font-weight: 600; }
+
+/* Pro blocker overlay (full-panel upgrade CTA) */
+.pro-blocker {
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--hairline));
+  border-radius: var(--radius-lg);
+  padding: 24px 18px;
+  text-align: center;
+  box-shadow: var(--shadow-1);
+}
+.pro-blocker-icon {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 10px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: white;
+  font-size: 20px;
+  display: grid; place-items: center;
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+.pro-blocker-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.pro-blocker-body {
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
 .separator-or {
   display: flex;
   align-items: center;

@@ -92,6 +92,15 @@ const els = {
 
   // POM tab
   exportJavaBtn: document.getElementById("exportJavaBtn"),
+  pomBlocker: document.getElementById("pomBlocker"),
+  pomCard: document.getElementById("pomCard"),
+
+  // Pricing + trial
+  planMonthly: document.getElementById("planMonthly"),
+  planYearly: document.getElementById("planYearly"),
+  buyPriceLabel: document.getElementById("buyPriceLabel"),
+  trialBtn: document.getElementById("trialBtn"),
+  trialNote: document.getElementById("trialNote"),
 };
 
 const STORAGE_KEY = "smart_locator_state";
@@ -123,18 +132,22 @@ document.querySelectorAll('.seg-tabs[role="tablist"]').forEach((bar) => {
 
     // Mode tabs?
     if (tab.dataset.mode) {
-      bar.querySelectorAll(".seg-tab").forEach((t) => t.classList.remove("active"));
-      tab.classList.add("active");
-      // mirror across both mode tab bars
       const newMode = tab.dataset.mode;
-      currentMode = newMode;
-      chrome.storage.local.set({ [MODE_KEY]: newMode });
-      document.querySelectorAll('.seg-tabs[id^="modeTabs"]').forEach((other) => {
-        other.querySelectorAll(".seg-tab").forEach((t) => {
-          t.classList.toggle("active", t.dataset.mode === newMode);
+      // Gate Multi-capture as Pro
+      if (newMode === "multi" && !proStatus.valid) {
+        // proStatus only tracks license; effective Pro includes trial too.
+        // Re-check via background to avoid stale state.
+        sendBg({ type: "LICENSE_IS_PRO" }).then((r) => {
+          if (r && r.pro) {
+            commitMode(newMode);
+          } else {
+            focusProTab();
+            showToast("Multi-capture is a Pro feature", true);
+          }
         });
-      });
-      updateStartLabel();
+        return;
+      }
+      commitMode(newMode);
       return;
     }
 
@@ -149,6 +162,17 @@ document.querySelectorAll('.seg-tabs[role="tablist"]').forEach((bar) => {
     }
   });
 });
+
+function commitMode(newMode) {
+  currentMode = newMode;
+  chrome.storage.local.set({ [MODE_KEY]: newMode });
+  document.querySelectorAll('.seg-tabs[id^="modeTabs"]').forEach((bar) => {
+    bar.querySelectorAll(".seg-tab").forEach((t) => {
+      t.classList.toggle("active", t.dataset.mode === newMode);
+    });
+  });
+  updateStartLabel();
+}
 
 function updateStartLabel() {
   if (els.startBtnLabel) {
@@ -975,9 +999,16 @@ els.onboardClose?.addEventListener("click", async () => {
    Pro / License — settings modal, upsell, lazy module loader
    =========================================================== */
 
-// Exact LemonSqueezy checkout URL (opened in a new tab via chrome.tabs.create —
-// MV3 forbids loading the LemonSqueezy lemon.js script inside the popup).
-const PRO_BUY_URL = "https://smartselenium.lemonsqueezy.com/checkout/buy/5c9e7b64-ec4a-4057-8133-42f899fcbc7f";
+// LemonSqueezy checkout URLs — opened in a new tab via chrome.tabs.create.
+// MV3 forbids loading lemon.js inside the popup, so we deep-link to the
+// hosted checkout instead.
+//
+// TODO: replace PRO_BUY_URL_YEARLY with the actual yearly variant once you
+// create it in LemonSqueezy (Products → Smart Selenium Pro → Add variant).
+const PRO_BUY_URL_MONTHLY = "https://smartselenium.lemonsqueezy.com/checkout/buy/5c9e7b64-ec4a-4057-8133-42f899fcbc7f";
+const PRO_BUY_URL_YEARLY  = "https://smartselenium.lemonsqueezy.com/checkout/buy/5c9e7b64-ec4a-4057-8133-42f899fcbc7f"; // ← replace with yearly variant URL
+const PRO_BUY_URL = PRO_BUY_URL_MONTHLY; // back-compat alias for older callers
+let selectedPlan = "monthly"; // toggled by pricing tiles
 
 let proLoaded = false;
 let proStatus = { valid: false, tier: null };
@@ -1060,20 +1091,58 @@ async function refreshLicenseUI() {
     }
   }
 
-  // Global indicators
-  els.proDotNav?.classList.toggle("hidden", !isValid);
-  els.proTabPill?.classList.toggle("hidden", isValid);   // hide "Pro" pill on tab when already Pro
-  els.playwrightProPill?.classList.toggle("hidden", isValid);
-  document.querySelectorAll(".pro-locked .pro-pill").forEach((p) => {
-    p.classList.toggle("hidden", isValid);
-  });
-  if (els.playwrightUpgrade && els.playwrightCode) {
-    els.playwrightUpgrade.classList.toggle("hidden", isValid);
-    els.playwrightCode.classList.toggle("hidden", !isValid);
+  // Trial status + button state
+  const trial = await sendBg({ type: "TRIAL_STATUS" });
+  const trialActive = !!trial?.active;
+  const trialUsed = !!trial?.used;
+  const effectivePro = isValid || trialActive;
+
+  if (els.trialBtn) {
+    if (trialActive) {
+      els.trialBtn.disabled = true;
+      els.trialBtn.textContent = "Trial active";
+    } else if (trialUsed) {
+      els.trialBtn.disabled = true;
+      els.trialBtn.textContent = "Trial already used";
+    } else {
+      els.trialBtn.disabled = false;
+      els.trialBtn.textContent = "Start 7-day free trial";
+    }
+  }
+  if (els.trialNote) {
+    if (trialActive && trial.endsAt) {
+      const days = Math.max(0, Math.ceil((trial.endsAt - Date.now()) / 86400000));
+      els.trialNote.textContent = `Trial: ${days} day${days === 1 ? "" : "s"} left`;
+      els.trialNote.classList.remove("hidden");
+      els.trialNote.classList.add("active");
+    } else {
+      els.trialNote.classList.add("hidden");
+    }
   }
 
-  // Lazy-load Pro modules on first valid detection
-  if (isValid && !proLoaded) {
+  // Global indicators (use effectivePro so trial unlocks UI)
+  els.proDotNav?.classList.toggle("hidden", !effectivePro);
+  els.proTabPill?.classList.toggle("hidden", effectivePro);
+  els.playwrightProPill?.classList.toggle("hidden", effectivePro);
+  document.querySelectorAll(".pro-pill.multi-pro-pill, .pro-pill.pom-pro-pill").forEach((p) => {
+    p.classList.toggle("hidden", effectivePro);
+  });
+  document.querySelectorAll(".pro-locked .pro-pill").forEach((p) => {
+    p.classList.toggle("hidden", effectivePro);
+  });
+  if (els.playwrightUpgrade && els.playwrightCode) {
+    els.playwrightUpgrade.classList.toggle("hidden", effectivePro);
+    els.playwrightCode.classList.toggle("hidden", !effectivePro);
+  }
+
+  // POM tab gate
+  if (els.pomBlocker && els.pomCard) {
+    els.pomBlocker.classList.toggle("hidden", effectivePro);
+    els.pomCard.classList.toggle("hidden", !effectivePro);
+  }
+
+  // Lazy-load Pro modules on first effective-pro detection
+  if (effectivePro && !proLoaded) {
     proLoaded = true;
     loadProModules().catch((err) => console.error("Pro load failed:", err));
   }
@@ -1125,10 +1194,33 @@ function focusProTab() {
   setTimeout(() => els.licenseKeyInput?.focus(), 80);
 }
 
-// Buy → open LemonSqueezy checkout in a new browser tab (MV3-safe).
-// Never inject lemon.js into the popup — Chrome blocks it under CSP.
+// Pricing tile toggle (monthly ↔ yearly)
+function selectPlan(plan) {
+  selectedPlan = (plan === "yearly") ? "yearly" : "monthly";
+  els.planMonthly?.classList.toggle("active", selectedPlan === "monthly");
+  els.planYearly?.classList.toggle("active", selectedPlan === "yearly");
+  if (els.buyPriceLabel) {
+    els.buyPriceLabel.textContent = selectedPlan === "yearly" ? "$39/yr · save 35%" : "$4.99/mo";
+  }
+}
+els.planMonthly?.addEventListener("click", () => selectPlan("monthly"));
+els.planYearly?.addEventListener("click", () => selectPlan("yearly"));
+
+// Buy → open the right LemonSqueezy checkout in a new browser tab (MV3-safe).
 els.buyProBtn?.addEventListener("click", () => {
-  chrome.tabs.create({ url: PRO_BUY_URL });
+  const url = selectedPlan === "yearly" ? PRO_BUY_URL_YEARLY : PRO_BUY_URL_MONTHLY;
+  chrome.tabs.create({ url });
+});
+
+// Start 7-day free trial
+els.trialBtn?.addEventListener("click", async () => {
+  const r = await sendBg({ type: "TRIAL_START" });
+  if (r?.ok) {
+    showToast("Trial started · 7 days of Pro");
+  } else if (r?.reason === "already-used") {
+    showToast("Trial already used", true);
+  }
+  refreshLicenseUI();
 });
 
 // Verify license key
@@ -1184,6 +1276,11 @@ els.licenseClearBtn?.addEventListener("click", async () => {
 
 // Upgrade CTA inside Playwright sub-tab → focus Pro tab
 els.playwrightUpgradeBtn?.addEventListener("click", focusProTab);
+
+// Any element marked data-go-pro routes to the Pro tab
+document.querySelectorAll("[data-go-pro]").forEach((b) => {
+  b.addEventListener("click", focusProTab);
+});
 
 // Any locked button with data-pro-feature → focus Pro tab
 document.addEventListener("click", (e) => {

@@ -48,7 +48,10 @@
 
       <div class="seg-tabs" id="modeTabsCompact" role="tablist" style="margin: 6px 0 4px;">
         <button class="seg-tab active" data-mode="single" role="tab">Single</button>
-        <button class="seg-tab" data-mode="multi" role="tab">Multi-capture</button>
+        <button class="seg-tab" data-mode="multi" role="tab">
+          Multi-capture
+          <span class="pro-pill multi-pro-pill">Pro</span>
+        </button>
       </div>
 
       <button id="startBtnCompact" class="pill-btn pill-primary">
@@ -95,7 +98,10 @@
 
       <div class="seg-tabs" id="modeTabsExpanded" role="tablist" style="margin: 10px 14px 0;">
         <button class="seg-tab active" data-mode="single" role="tab">Single</button>
-        <button class="seg-tab" data-mode="multi" role="tab">Multi-capture</button>
+        <button class="seg-tab" data-mode="multi" role="tab">
+          Multi-capture
+          <span class="pro-pill multi-pro-pill">Pro</span>
+        </button>
       </div>
 
       <div class="control-bar">
@@ -132,7 +138,10 @@
         <div class="seg-tabs" role="tablist">
           <button class="seg-tab active" data-tab="locators" role="tab">Locators</button>
           <button class="seg-tab" data-tab="java" role="tab">Java</button>
-          <button class="seg-tab" data-tab="pom" role="tab">POM</button>
+          <button class="seg-tab" data-tab="pom" role="tab">
+            POM
+            <span class="pro-pill pom-pro-pill">Pro</span>
+          </button>
           <button class="seg-tab" data-tab="meta" role="tab">Element</button>
           <button class="seg-tab seg-tab-pro" data-tab="pro" role="tab">
             Pro
@@ -228,7 +237,16 @@
 
         <!-- POM -->
         <div class="tab-panel" data-panel="pom">
-          <div class="card">
+          <div class="pro-blocker hidden" id="pomBlocker">
+            <div class="pro-blocker-icon">★</div>
+            <h3 class="pro-blocker-title">Page Object Model is a Pro feature</h3>
+            <p class="pro-blocker-body">
+              Generate full POM classes with action methods from any captured element.
+              Multi-capture mode builds the entire class in one inspect session.
+            </p>
+            <button class="pill-btn pill-primary" data-go-pro>Unlock Pro</button>
+          </div>
+          <div class="card" id="pomCard">
             <div class="card-head">
               <span class="badge badge-pom">Page Object Model</span>
               <div class="card-actions">
@@ -255,16 +273,41 @@
             </div>
 
             <ul class="pro-feature-list">
+              <li><span class="pro-tick">✓</span> Multi-element capture (full POM in one session)</li>
+              <li><span class="pro-tick">✓</span> Page Object Model generation</li>
+              <li><span class="pro-tick">✓</span> iframe traversal + driver.switchTo().frame()</li>
+              <li><span class="pro-tick">✓</span> Shadow DOM traversal + getShadowRoot()</li>
               <li><span class="pro-tick">✓</span> Playwright TypeScript + Python codegen</li>
               <li><span class="pro-tick">✓</span> Export full POM as .java file</li>
-              <li><span class="pro-tick">✓</span> Live locator validation (uniqueness check)</li>
+              <li><span class="pro-tick">✓</span> Live locator validation</li>
               <li><span class="pro-tick">✓</span> Cypress codegen <span class="soon-chip">soon</span></li>
               <li><span class="pro-tick">✓</span> Cloud sync of captures <span class="soon-chip">soon</span></li>
             </ul>
 
+            <!-- Pricing tiles -->
+            <div class="price-tiles">
+              <button class="price-tile active" data-plan="monthly" id="planMonthly">
+                <div class="price-tile-label">Monthly</div>
+                <div class="price-tile-amount">$4.99<span>/mo</span></div>
+                <div class="price-tile-sub">Cancel anytime</div>
+              </button>
+              <button class="price-tile" data-plan="yearly" id="planYearly">
+                <div class="price-tile-badge">Save 35%</div>
+                <div class="price-tile-label">Yearly</div>
+                <div class="price-tile-amount">$39<span>/yr</span></div>
+                <div class="price-tile-sub">~$3.25/mo</div>
+              </button>
+            </div>
+
             <button class="pill-btn pill-primary buy-btn" id="buyProBtn">
-              Buy Smart Selenium Pro · $4.99/mo
+              Buy Smart Selenium Pro · <span id="buyPriceLabel">$4.99/mo</span>
             </button>
+
+            <button class="pill-btn trial-btn" id="trialBtn">
+              Start 7-day free trial
+            </button>
+            <div class="trial-note hidden" id="trialNote"></div>
+
             <div class="modal-fineprint">
               14-day refund. License key delivered by email after checkout.
             </div>

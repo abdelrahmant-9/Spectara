@@ -1053,6 +1053,35 @@ function sendBg(msg) {
   });
 }
 
+function formatTrialRemaining(endsAt) {
+  const ms = Math.max(0, endsAt - Date.now());
+  const days = Math.floor(ms / 86400000);
+  const hours = Math.floor((ms % 86400000) / 3600000);
+  const mins = Math.floor((ms % 3600000) / 60000);
+  if (days >= 1) return `${days}d ${hours}h left`;
+  if (hours >= 1) return `${hours}h ${mins}m left`;
+  if (mins >= 1) return `${mins}m left`;
+  return "ending now";
+}
+
+function humanReason(r) {
+  switch (r) {
+    case "invalid-format":         return "Wrong key format (expected SL-XXXX-XXXX-XXXX or LemonSqueezy UUID)";
+    case "not-found":              return "Key not found in our database — double-check the key from your purchase email";
+    case "expired":                return "Subscription expired — renew to reactivate";
+    case "cancelled":              return "Subscription cancelled";
+    case "refunded":               return "Refunded";
+    case "backend-unreachable":    return "License server unavailable — check your internet, or contact support if this persists";
+    case "network-error":          return "Network error reaching license server — try again in a moment";
+    case "offline-grace-exceeded": return "Offline for too long — reconnect to the internet and try again";
+    case "no-license":             return "No license entered yet";
+    default: {
+      if (typeof r === "string" && r.startsWith("http-")) return `License server error (${r.replace("http-", "HTTP ")})`;
+      return r ? `Error: ${r}` : "Invalid";
+    }
+  }
+}
+
 async function refreshLicenseUI() {
   const status = await sendBg({ type: "LICENSE_STATUS" });
   const raw = await sendBg({ type: "LICENSE_RAW" });
@@ -1170,34 +1199,7 @@ async function refreshLicenseUI() {
   }
 }
 
-function formatTrialRemaining(endsAt) {
-  const ms = Math.max(0, endsAt - Date.now());
-  const days = Math.floor(ms / 86400000);
-  const hours = Math.floor((ms % 86400000) / 3600000);
-  const mins = Math.floor((ms % 3600000) / 60000);
-  if (days >= 1) return `${days}d ${hours}h left`;
-  if (hours >= 1) return `${hours}h ${mins}m left`;
-  if (mins >= 1) return `${mins}m left`;
-  return "ending now";
-}
-
-function humanReason(r) {
-  switch (r) {
-    case "invalid-format":         return "Wrong key format (expected SL-XXXX-XXXX-XXXX or LemonSqueezy UUID)";
-    case "not-found":              return "Key not found in our database — double-check the key from your purchase email";
-    case "expired":                return "Subscription expired — renew to reactivate";
-    case "cancelled":              return "Subscription cancelled";
-    case "refunded":               return "Refunded";
-    case "backend-unreachable":    return "License server unavailable — check your internet, or contact support if this persists";
-    case "network-error":          return "Network error reaching license server — try again in a moment";
-    case "offline-grace-exceeded": return "Offline for too long — reconnect to the internet and try again";
-    case "no-license":             return "No license entered yet";
-    default: {
-      if (typeof r === "string" && r.startsWith("http-")) return `License server error (${r.replace("http-", "HTTP ")})`;
-      return r ? `Error: ${r}` : "Invalid";
-    }
-  }
-}
+// (helpers moved above refreshLicenseUI — defined earlier in this file)
 
 /* ---------------- Lazy module loader ---------------- */
 async function loadProModules() {

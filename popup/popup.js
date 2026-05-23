@@ -67,31 +67,31 @@ const els = {
   onboardClose: document.getElementById("onboardClose"),
   onboardShortcut: document.getElementById("onboardShortcut"),
 
-  // Pro / Settings
-  settingsBtn: document.getElementById("settingsBtn"),
-  settingsModal: document.getElementById("settingsModal"),
-  settingsClose: document.getElementById("settingsClose"),
-  licenseStatusChip: document.getElementById("licenseStatusChip"),
-  licenseDetail: document.getElementById("licenseDetail"),
+  // Pro tab
+  proUnlicensed: document.getElementById("proUnlicensed"),
+  proLicensed: document.getElementById("proLicensed"),
+  proTabPill: document.getElementById("proTabPill"),
+  proDotNav: document.getElementById("proDotNav"),
+  proActiveDetail: document.getElementById("proActiveDetail"),
+  proTierChip: document.getElementById("proTierChip"),
+  proKeyDisplay: document.getElementById("proKeyDisplay"),
+  proExpiresAt: document.getElementById("proExpiresAt"),
+  buyProBtn: document.getElementById("buyProBtn"),
   licenseKeyInput: document.getElementById("licenseKeyInput"),
-  licenseSaveBtn: document.getElementById("licenseSaveBtn"),
+  licenseVerifyBtn: document.getElementById("licenseVerifyBtn"),
   licenseRefreshBtn: document.getElementById("licenseRefreshBtn"),
   licenseClearBtn: document.getElementById("licenseClearBtn"),
   licenseError: document.getElementById("licenseError"),
-  buyProBtn: document.getElementById("buyProBtn"),
-  proDotNav: document.getElementById("proDotNav"),
+
+  // Java sub-tabs + Playwright
   playwrightProPill: document.getElementById("playwrightProPill"),
   playwrightUpgrade: document.getElementById("playwrightUpgrade"),
   playwrightUpgradeBtn: document.getElementById("playwrightUpgradeBtn"),
   playwrightCode: document.getElementById("playwright-code"),
   playwrightLang: document.getElementById("playwrightLang"),
+
+  // POM tab
   exportJavaBtn: document.getElementById("exportJavaBtn"),
-  upsellModal: document.getElementById("upsellModal"),
-  upsellClose: document.getElementById("upsellClose"),
-  upsellFeatureTitle: document.getElementById("upsellFeatureTitle"),
-  upsellFeatureBody: document.getElementById("upsellFeatureBody"),
-  upsellBuyBtn: document.getElementById("upsellBuyBtn"),
-  upsellHasKeyBtn: document.getElementById("upsellHasKeyBtn"),
 };
 
 const STORAGE_KEY = "smart_locator_state";
@@ -972,7 +972,9 @@ els.onboardClose?.addEventListener("click", async () => {
    Pro / License — settings modal, upsell, lazy module loader
    =========================================================== */
 
-const PRO_BUY_URL = "https://smartselenium.lemonsqueezy.com";
+// Exact LemonSqueezy checkout URL (opened in a new tab via chrome.tabs.create —
+// MV3 forbids loading the LemonSqueezy lemon.js script inside the popup).
+const PRO_BUY_URL = "https://smartselenium.lemonsqueezy.com/checkout/buy/5c9e7b64-ec4a-4057-8133-42f899fcbc7f";
 
 let proLoaded = false;
 let proStatus = { valid: false, tier: null };
@@ -1020,53 +1022,55 @@ function sendBg(msg) {
 
 async function refreshLicenseUI() {
   const status = await sendBg({ type: "LICENSE_STATUS" });
-  proStatus = status || { valid: false };
-  const chip = els.licenseStatusChip;
-  if (chip) {
-    chip.className = "status-chip";
-    if (status?.valid) {
-      chip.classList.add("pro");
-      chip.textContent = `Pro · ${status.tier || "active"}${status.fromGrace ? " (offline)" : ""}`;
-    } else if (status && status.reason && status.reason !== "no-license") {
-      chip.classList.add("invalid");
-      chip.textContent = humanReason(status.reason);
-    } else {
-      chip.textContent = "Free";
-    }
-  }
-  if (els.licenseDetail) {
-    if (status?.valid) {
-      els.licenseDetail.textContent = status.expiresAt
-        ? `Renews ${new Date(status.expiresAt).toLocaleDateString()}.`
-        : "Lifetime license. All Pro features unlocked.";
-    } else if (status?.reason === "offline-grace-exceeded") {
-      els.licenseDetail.textContent = "Offline grace window exceeded — reconnect to re-validate.";
-    } else {
-      els.licenseDetail.textContent = "Free tier. Locators · Java · POM all included.";
-    }
-  }
-  // Show refresh + remove only when a key is stored
   const raw = await sendBg({ type: "LICENSE_RAW" });
-  const hasKey = !!(raw && raw.key);
-  els.licenseRefreshBtn?.toggleAttribute("hidden", !hasKey);
-  els.licenseClearBtn?.toggleAttribute("hidden", !hasKey);
-  if (hasKey && els.licenseKeyInput) {
-    els.licenseKeyInput.value = raw.key;
+  proStatus = status || { valid: false };
+  const isValid = !!status?.valid;
+
+  // Swap Pro tab state: Unlicensed ↔ Licensed
+  els.proUnlicensed?.classList.toggle("hidden", isValid);
+  els.proLicensed?.classList.toggle("hidden", !isValid);
+
+  if (isValid) {
+    if (els.proActiveDetail) {
+      els.proActiveDetail.textContent = status.fromGrace
+        ? "Pro features active (offline grace window — will re-validate when online)."
+        : "All Pro features unlocked.";
+    }
+    if (els.proTierChip) els.proTierChip.textContent = (status.tier || "pro").toUpperCase();
+    if (els.proKeyDisplay) els.proKeyDisplay.textContent = raw?.key || "—";
+    if (els.proExpiresAt) {
+      els.proExpiresAt.textContent = status.expiresAt
+        ? new Date(status.expiresAt).toLocaleDateString()
+        : "Lifetime";
+    }
+  } else {
+    // Surface invalid-key errors inline in the Unlicensed state
+    if (els.licenseError) {
+      if (status?.reason && status.reason !== "no-license") {
+        els.licenseError.textContent = `License invalid: ${humanReason(status.reason)}`;
+        els.licenseError.classList.remove("hidden");
+      }
+    }
+    // Pre-fill input from any saved-but-invalid key (rare case)
+    if (raw?.key && els.licenseKeyInput && !els.licenseKeyInput.value) {
+      els.licenseKeyInput.value = raw.key;
+    }
   }
-  // Nav indicator + tab pill
-  els.proDotNav?.classList.toggle("hidden", !status?.valid);
-  els.playwrightProPill?.classList.toggle("hidden", !!status?.valid);
-  // Hide locked badges on Pro
+
+  // Global indicators
+  els.proDotNav?.classList.toggle("hidden", !isValid);
+  els.proTabPill?.classList.toggle("hidden", isValid);   // hide "Pro" pill on tab when already Pro
+  els.playwrightProPill?.classList.toggle("hidden", isValid);
   document.querySelectorAll(".pro-locked .pro-pill").forEach((p) => {
-    p.classList.toggle("hidden", !!status?.valid);
+    p.classList.toggle("hidden", isValid);
   });
-  // Toggle playwright upgrade CTA vs real code
   if (els.playwrightUpgrade && els.playwrightCode) {
-    els.playwrightUpgrade.classList.toggle("hidden", !!status?.valid);
-    els.playwrightCode.classList.toggle("hidden", !status?.valid);
+    els.playwrightUpgrade.classList.toggle("hidden", isValid);
+    els.playwrightCode.classList.toggle("hidden", !isValid);
   }
-  // Lazy-load Pro modules on first detected valid status
-  if (status?.valid && !proLoaded) {
+
+  // Lazy-load Pro modules on first valid detection
+  if (isValid && !proLoaded) {
     proLoaded = true;
     loadProModules().catch((err) => console.error("Pro load failed:", err));
   }
@@ -1109,34 +1113,37 @@ async function loadProModules() {
   }
 }
 
-/* ---------------- Settings modal ---------------- */
-function openSettings() {
-  els.settingsModal?.classList.remove("hidden");
-  refreshLicenseUI();
-  setTimeout(() => els.licenseKeyInput?.focus(), 50);
-}
-function closeSettings() {
-  els.settingsModal?.classList.add("hidden");
-  if (els.licenseError) { els.licenseError.textContent = ""; els.licenseError.classList.add("hidden"); }
+/* ---------------- Pro tab handlers ---------------- */
+
+// Open Pro tab (e.g. from "Unlock Pro" CTAs on locked features)
+function focusProTab() {
+  const proTab = document.querySelector('.seg-tab[data-tab="pro"]');
+  if (proTab) proTab.click();
+  setTimeout(() => els.licenseKeyInput?.focus(), 80);
 }
 
-els.settingsBtn?.addEventListener("click", openSettings);
-els.settingsClose?.addEventListener("click", closeSettings);
-els.settingsModal?.addEventListener("click", (e) => {
-  if (e.target === els.settingsModal) closeSettings();
+// Buy → open LemonSqueezy checkout in a new browser tab (MV3-safe).
+// Never inject lemon.js into the popup — Chrome blocks it under CSP.
+els.buyProBtn?.addEventListener("click", () => {
+  chrome.tabs.create({ url: PRO_BUY_URL });
 });
 
-els.licenseSaveBtn?.addEventListener("click", async () => {
+// Verify license key
+els.licenseVerifyBtn?.addEventListener("click", async () => {
   const key = (els.licenseKeyInput?.value || "").trim().toUpperCase();
+  if (els.licenseError) { els.licenseError.classList.add("hidden"); els.licenseError.textContent = ""; }
   if (!key) return;
-  els.licenseSaveBtn.disabled = true;
-  const original = els.licenseSaveBtn.textContent;
-  els.licenseSaveBtn.textContent = "Validating…";
+
+  els.licenseVerifyBtn.disabled = true;
+  const original = els.licenseVerifyBtn.textContent;
+  els.licenseVerifyBtn.textContent = "Verifying…";
+
   const res = await sendBg({ type: "LICENSE_SET", key });
-  els.licenseSaveBtn.disabled = false;
-  els.licenseSaveBtn.textContent = original;
+
+  els.licenseVerifyBtn.disabled = false;
+  els.licenseVerifyBtn.textContent = original;
+
   if (res?.valid) {
-    if (els.licenseError) { els.licenseError.textContent = ""; els.licenseError.classList.add("hidden"); }
     showToast("Pro activated");
   } else if (els.licenseError) {
     els.licenseError.textContent = `License invalid: ${humanReason(res?.reason || "unknown")}`;
@@ -1145,6 +1152,15 @@ els.licenseSaveBtn?.addEventListener("click", async () => {
   refreshLicenseUI();
 });
 
+// Submit on Enter inside the key input
+els.licenseKeyInput?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    els.licenseVerifyBtn?.click();
+  }
+});
+
+// Refresh license status (force re-validate, ignoring 24h cache)
 els.licenseRefreshBtn?.addEventListener("click", async () => {
   els.licenseRefreshBtn.disabled = true;
   await sendBg({ type: "LICENSE_REFRESH" });
@@ -1153,8 +1169,9 @@ els.licenseRefreshBtn?.addEventListener("click", async () => {
   showToast("License refreshed");
 });
 
+// Remove license (sign-out)
 els.licenseClearBtn?.addEventListener("click", async () => {
-  if (!confirm("Remove license from this device?")) return;
+  if (!confirm("Remove license from this device?\nPro features will lock until you re-verify.")) return;
   await sendBg({ type: "LICENSE_CLEAR" });
   if (els.licenseKeyInput) els.licenseKeyInput.value = "";
   proLoaded = false;
@@ -1162,52 +1179,32 @@ els.licenseClearBtn?.addEventListener("click", async () => {
   showToast("License removed");
 });
 
-/* ---------------- Upsell modal ---------------- */
-const UPSELL_FEATURES = {
-  "export-pom": {
-    title: "Export .java file",
-    body: "Download the full Page Object Model as a ready-to-import .java file with proper package layout and javadoc.",
-  },
-  "playwright": {
-    title: "Playwright codegen",
-    body: "Generate Playwright TypeScript and Python snippets with page.locator(), getByRole, and shadow / iframe helpers.",
-  },
-  "validate": {
-    title: "Live locator validation",
-    body: "See which locators are unique, ambiguous, or broken on the live page before you ship them to CI.",
-  },
-};
+// Upgrade CTA inside Playwright sub-tab → focus Pro tab
+els.playwrightUpgradeBtn?.addEventListener("click", focusProTab);
 
-function openUpsell(featureKey) {
-  const f = UPSELL_FEATURES[featureKey] || { title: "Pro feature", body: "Unlock advanced features." };
-  if (els.upsellFeatureTitle) els.upsellFeatureTitle.textContent = f.title;
-  if (els.upsellFeatureBody)  els.upsellFeatureBody.textContent  = f.body;
-  els.upsellModal?.classList.remove("hidden");
-}
-function closeUpsell() { els.upsellModal?.classList.add("hidden"); }
-
-els.upsellClose?.addEventListener("click", closeUpsell);
-els.upsellModal?.addEventListener("click", (e) => {
-  if (e.target === els.upsellModal) closeUpsell();
-});
-els.upsellBuyBtn?.addEventListener("click", () => {
-  chrome.tabs.create({ url: PRO_BUY_URL });
-});
-els.upsellHasKeyBtn?.addEventListener("click", () => {
-  closeUpsell();
-  openSettings();
-});
-els.playwrightUpgradeBtn?.addEventListener("click", () => openUpsell("playwright"));
-
-// Click on any element with data-pro-feature opens the upsell modal when free
+// Any locked button with data-pro-feature → focus Pro tab
 document.addEventListener("click", (e) => {
   const t = e.target.closest("[data-pro-feature]");
   if (!t) return;
-  if (proStatus.valid) return; // pro module handles it
+  if (proStatus.valid) return; // pro module owns the click
   e.preventDefault();
   e.stopPropagation();
-  openUpsell(t.dataset.proFeature);
+  focusProTab();
 }, true);
+
+/* ---------------- Java sub-tabs ---------------- */
+document.querySelectorAll(".sub-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const sibs = tab.parentElement.querySelectorAll(".sub-tab");
+    sibs.forEach((t) => t.classList.remove("active"));
+    tab.classList.add("active");
+    const parentPanel = tab.closest(".tab-panel");
+    if (!parentPanel) return;
+    parentPanel.querySelectorAll(".sub-panel").forEach((p) => p.classList.remove("active"));
+    const target = parentPanel.querySelector(`.sub-panel[data-subpanel="${tab.dataset.subtab}"]`);
+    if (target) target.classList.add("active");
+  });
+});
 
 // Auto-format license key as user types (SL-XXXX-XXXX-XXXX)
 els.licenseKeyInput?.addEventListener("input", (e) => {

@@ -775,6 +775,148 @@ html::-webkit-scrollbar { width: 0; height: 0; }
 }
 
 /* =================================================
+   Sub-tabs (inside Java tab)
+   ================================================= */
+.sub-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 10px;
+}
+.sub-tab {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.12s, border-color 0.12s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.sub-tab:hover:not(.active) { color: var(--text); }
+.sub-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+.sub-panel { display: none; }
+.sub-panel.active { display: block; }
+
+/* =================================================
+   Pro tab (Settings / License)
+   ================================================= */
+.seg-tab-pro {
+  margin-left: auto; /* push Pro tab to the right edge of seg-tabs */
+}
+
+.pro-state { padding: 4px 2px 10px; }
+
+.pro-hero-block {
+  text-align: center;
+  padding: 8px 0 12px;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 12px;
+}
+.pro-hero-mark {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 8px;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(155,216,77,0.30), transparent 60%),
+    linear-gradient(135deg, #1f2226, #15171a);
+  border: 1px solid var(--hairline-strong);
+  box-shadow: 0 0 0 1px var(--accent-glow), var(--shadow-1);
+  display: grid; place-items: center;
+  font-size: 18px;
+  color: var(--lime);
+}
+.pro-hero-mark-on {
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: white;
+  box-shadow: 0 0 0 1px var(--accent), 0 4px 14px var(--accent-glow);
+}
+.pro-hero-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.pro-hero-sub {
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.pro-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: var(--surface-inset);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+.pro-info-row .modal-label { margin-bottom: 0; }
+
+.license-key-display {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--text);
+  background: var(--bg-grad-1);
+  border: 1px solid var(--hairline);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+
+.buy-btn {
+  width: 100%;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.separator-or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 10px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.separator-or::before,
+.separator-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--hairline);
+}
+
+.soon-chip {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface-inset);
+  border: 1px solid var(--hairline);
+  color: var(--text-tertiary);
+  margin-left: 4px;
+}
+
+/* =================================================
    Pro tier UI — pills, locked states, modals
    ================================================= */
 .pro-pill {

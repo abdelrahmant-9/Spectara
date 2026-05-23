@@ -190,29 +190,68 @@ export async function isPro() {
 }
 
 /* ---------------- Free 7-day trial ----------------
- * One-shot trial tracked locally only. Storage:
- *   smart_locator_trial: { startedAt, endsAt, used }
+ * One-shot trial tracked in chrome.storage.sync (Google-account backed),
+ * with chrome.storage.local as a fallback when sync is unavailable
+ * (e.g. user signed out of Chrome).
  *
- * Honor-system enforcement — a user who clears chrome.storage.local can
- * trigger the trial again. Acceptable for a $4.99 product; preventing
- * abuse would require server-side device fingerprinting which we
- * deliberately do not do for privacy reasons.
+ * Why sync: uninstalling the extension wipes storage.local. If the trial
+ * lived only in local storage, any user could reinstall and trigger the
+ * trial again indefinitely. storage.sync persists to the user's Google
+ * account, so reinstalls on the same profile carry the "used" flag
+ * forward and survive Chrome reinstalls too.
+ *
+ * Bypass surface that still exists:
+ *   - User signs out of Chrome before installing → no sync data → fresh trial
+ *   - User uses a different Google account → fresh trial
+ *   - Both sync + local cleared manually → fresh trial
+ *
+ * Acceptable for a $4.99 product. Server-side enforcement would require
+ * email collection and is added in a later iteration once the worker
+ * carries a /v1/trial/start endpoint.
+ *
+ * Storage record:
+ *   smart_locator_trial: { startedAt, endsAt, used }
  */
+
+async function readTrial() {
+  // Prefer sync; fall back to local if sync unavailable
+  try {
+    const s = await chrome.storage.sync.get(TRIAL_KEY);
+    if (s && s[TRIAL_KEY]) return s[TRIAL_KEY];
+  } catch (_) { /* sync may be disabled */ }
+  try {
+    const l = await chrome.storage.local.get(TRIAL_KEY);
+    return l[TRIAL_KEY] || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function writeTrial(rec) {
+  // Write to both so we degrade gracefully if sync flips off later
+  const payload = { [TRIAL_KEY]: rec };
+  const writes = [];
+  try { writes.push(chrome.storage.sync.set(payload)); } catch (_) {}
+  try { writes.push(chrome.storage.local.set(payload)); } catch (_) {}
+  await Promise.allSettled(writes);
+}
+
 export async function startTrial() {
   const cur = await getTrialStatus();
   if (cur.used) return { ok: false, reason: "already-used", ...cur };
   const now = Date.now();
   const rec = { startedAt: now, endsAt: now + TRIAL_DURATION_MS, used: true };
-  await chrome.storage.local.set({ [TRIAL_KEY]: rec });
+  await writeTrial(rec);
   return { ok: true, ...rec, active: true };
 }
 
 export async function getTrialStatus() {
-  const stored = await chrome.storage.local.get(TRIAL_KEY);
-  const t = stored[TRIAL_KEY];
+  const t = await readTrial();
   if (!t || !t.startedAt) return { used: false, active: false };
   const now = Date.now();
   const active = t.endsAt > now;
+  // Self-heal: if sync had it but local lost it (or vice versa), republish
+  try { await writeTrial(t); } catch (_) {}
   return { ...t, active };
 }
 

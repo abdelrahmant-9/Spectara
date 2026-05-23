@@ -880,6 +880,9 @@ function renderResult(data) {
 
   if (data.promoted) {
     setHint(`Auto-promoted <b>&lt;${data.originalTag}&gt;</b> → <b>&lt;${data.element.tag}&gt;</b>. <b>${KEY.ALT}</b>+click for exact node.`);
+  } else if (data.originalTag && data.originalTag !== data.element.tag) {
+    // ALT was held — exact node captured without promotion. Confirm to user.
+    setHint(`Exact node captured: <b>&lt;${data.element.tag}&gt;</b> (<b>${KEY.ALT}</b> held).`);
   } else if (currentMode === "multi") {
     setHint(`<b>${captures.length}</b> element${captures.length === 1 ? "" : "s"} captured. POM rebuilds with each click.`);
   } else if (data.isList) {

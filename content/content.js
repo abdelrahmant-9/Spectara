@@ -823,14 +823,38 @@
   function onKey(e) {
     if (!inspecting) return;
     if (e.key === "Escape") {
-      stopInspect(true);
-    } else if (e.key === "p" || e.key === "P") {
-      // Don't pause while typing in a text field
-      const a = document.activeElement;
-      const tag = a && a.tagName ? a.tagName.toLowerCase() : "";
-      if (tag === "input" || tag === "textarea" || (a && a.isContentEditable)) return;
       e.preventDefault();
+      e.stopPropagation();
+      stopInspect(true);
+      return;
+    }
+    if (e.key === "p" || e.key === "P") {
+      // Always honor P during inspect — even when page input has residual
+      // focus. Inspect mode is a global override; users expect P to work
+      // regardless of where they last clicked on the page.
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
       togglePause();
+      return;
+    }
+    // Visual feedback for ALT (exact node) — repaint overlay border orange
+    // while the modifier is held so users see the mode is active.
+    if (e.key === "Alt" || e.altKey) {
+      if (overlay && !paused) {
+        overlay.style.borderColor = "#ff9f0a";
+        overlay.style.background = "rgba(255, 159, 10, 0.14)";
+      }
+    }
+  }
+
+  function onKeyUp(e) {
+    if (!inspecting) return;
+    if (e.key === "Alt" || !e.altKey) {
+      if (overlay && !paused) {
+        overlay.style.borderColor = "";
+        overlay.style.background = "";
+      }
     }
   }
 
@@ -1070,6 +1094,7 @@
     document.addEventListener("mouseup", blockEvent, true);
     document.addEventListener("submit", blockEvent, true);
     document.addEventListener("keydown", onKey, true);
+    document.addEventListener("keyup", onKeyUp, true);
   }
 
   function stopInspect(notify = true) {
@@ -1086,6 +1111,7 @@
     document.removeEventListener("mouseup", blockEvent, true);
     document.removeEventListener("submit", blockEvent, true);
     document.removeEventListener("keydown", onKey, true);
+    document.removeEventListener("keyup", onKeyUp, true);
 
     setTimeout(removeOverlay, 600);
     removePanel();

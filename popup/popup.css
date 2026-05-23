@@ -91,7 +91,8 @@ body {
     linear-gradient(180deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
   letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
+  /* No min-height — Chrome popups must auto-size to body content
+     so they shrink after Clear all. Overscroll is handled by html bg. */
 }
 
 /* Webkit scrollbar styling — kills white track */
@@ -321,8 +322,7 @@ html::-webkit-scrollbar { width: 0; height: 0; }
 .results { padding: 0 14px 14px; }
 
 .seg-tabs {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
   gap: 2px;
   padding: 2px;
   background: var(--surface-inset);
@@ -330,6 +330,7 @@ html::-webkit-scrollbar { width: 0; height: 0; }
   border-radius: var(--radius-md);
   margin-bottom: 12px;
 }
+.seg-tabs > .seg-tab { flex: 1 1 0; min-width: 0; }
 .seg-tab {
   background: transparent;
   border: none;
@@ -342,6 +343,13 @@ html::-webkit-scrollbar { width: 0; height: 0; }
   border-radius: 7px;
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .seg-tab:hover:not(.active) { color: var(--text); }
 .seg-tab.active {
@@ -811,7 +819,17 @@ html::-webkit-scrollbar { width: 0; height: 0; }
    Pro tab (Settings / License)
    ================================================= */
 .seg-tab-pro {
-  margin-left: auto; /* push Pro tab to the right edge of seg-tabs */
+  /* Visually separated from result tabs with a subtle left hairline */
+  position: relative;
+}
+.seg-tab-pro::before {
+  content: "";
+  position: absolute;
+  left: -2px;
+  top: 4px;
+  bottom: 4px;
+  width: 1px;
+  background: var(--hairline);
 }
 
 .pro-state { padding: 4px 2px 10px; }

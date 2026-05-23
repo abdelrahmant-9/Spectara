@@ -1073,16 +1073,30 @@ html::-webkit-scrollbar { width: 0; height: 0; }
 .pro-pill.is-active { background: var(--success); box-shadow: 0 1px 3px rgba(48,209,88,0.4); }
 
 .pro-dot {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 0 2px var(--bg);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  flex-shrink: 0;
 }
 .icon-btn { position: relative; }
+
+.trial-pill-nav {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  white-space: nowrap;
+  margin-right: 4px;
+  cursor: default;
+}
 
 .pro-locked {
   position: relative;

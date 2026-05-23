@@ -101,6 +101,7 @@ const els = {
   buyPriceLabel: document.getElementById("buyPriceLabel"),
   trialBtn: document.getElementById("trialBtn"),
   trialNote: document.getElementById("trialNote"),
+  trialPillNav: document.getElementById("trialPillNav"),
 };
 
 const STORAGE_KEY = "smart_locator_state";
@@ -999,16 +1000,14 @@ els.onboardClose?.addEventListener("click", async () => {
    Pro / License — settings modal, upsell, lazy module loader
    =========================================================== */
 
-// LemonSqueezy checkout URLs — opened in a new tab via chrome.tabs.create.
-// MV3 forbids loading lemon.js inside the popup, so we deep-link to the
-// hosted checkout instead.
-//
-// TODO: replace PRO_BUY_URL_YEARLY with the actual yearly variant once you
-// create it in LemonSqueezy (Products → Smart Selenium Pro → Add variant).
-const PRO_BUY_URL_MONTHLY = "https://smartselenium.lemonsqueezy.com/checkout/buy/5c9e7b64-ec4a-4057-8133-42f899fcbc7f";
-const PRO_BUY_URL_YEARLY  = "https://smartselenium.lemonsqueezy.com/checkout/buy/5c9e7b64-ec4a-4057-8133-42f899fcbc7f"; // ← replace with yearly variant URL
-const PRO_BUY_URL = PRO_BUY_URL_MONTHLY; // back-compat alias for older callers
-let selectedPlan = "monthly"; // toggled by pricing tiles
+// Single LemonSqueezy checkout URL — the hosted page lets the user pick
+// monthly or yearly variant. MV3 forbids embedding lemon.js inside the popup,
+// so we deep-link via chrome.tabs.create. Append ?variant query in the future
+// if you want pre-selection per click.
+const PRO_BUY_URL = "https://smartselenium.lemonsqueezy.com/checkout/buy/5c9e7b64-ec4a-4057-8133-42f899fcbc7f";
+const PRO_BUY_URL_MONTHLY = PRO_BUY_URL;
+const PRO_BUY_URL_YEARLY  = PRO_BUY_URL;
+let selectedPlan = "monthly"; // tile toggle only changes the displayed price label
 
 let proLoaded = false;
 let proStatus = { valid: false, tier: null };
@@ -1121,12 +1120,25 @@ async function refreshLicenseUI() {
   }
   if (els.trialNote) {
     if (trialActive && trial.endsAt) {
-      const days = Math.max(0, Math.ceil((trial.endsAt - Date.now()) / 86400000));
-      els.trialNote.textContent = `Trial: ${days} day${days === 1 ? "" : "s"} left`;
+      els.trialNote.textContent = `Trial: ${formatTrialRemaining(trial.endsAt)} — subscribe before it ends to keep Pro features.`;
       els.trialNote.classList.remove("hidden");
       els.trialNote.classList.add("active");
+    } else if (trialUsed && !trialActive && !isValid) {
+      els.trialNote.textContent = "Trial expired. Subscribe to keep Pro features.";
+      els.trialNote.classList.remove("hidden");
+      els.trialNote.classList.remove("active");
     } else {
       els.trialNote.classList.add("hidden");
+    }
+  }
+
+  // Nav pill — show trial countdown beside Pro dot
+  if (els.trialPillNav) {
+    if (trialActive && trial.endsAt && !isValid) {
+      els.trialPillNav.textContent = `Trial · ${formatTrialRemaining(trial.endsAt)}`;
+      els.trialPillNav.classList.remove("hidden");
+    } else {
+      els.trialPillNav.classList.add("hidden");
     }
   }
 
@@ -1156,6 +1168,17 @@ async function refreshLicenseUI() {
     proLoaded = true;
     loadProModules().catch((err) => console.error("Pro load failed:", err));
   }
+}
+
+function formatTrialRemaining(endsAt) {
+  const ms = Math.max(0, endsAt - Date.now());
+  const days = Math.floor(ms / 86400000);
+  const hours = Math.floor((ms % 86400000) / 3600000);
+  const mins = Math.floor((ms % 3600000) / 60000);
+  if (days >= 1) return `${days}d ${hours}h left`;
+  if (hours >= 1) return `${hours}h ${mins}m left`;
+  if (mins >= 1) return `${mins}m left`;
+  return "ending now";
 }
 
 function humanReason(r) {
@@ -1302,6 +1325,10 @@ els.playwrightUpgradeBtn?.addEventListener("click", focusProTab);
 document.querySelectorAll("[data-go-pro]").forEach((b) => {
   b.addEventListener("click", focusProTab);
 });
+
+// Nav trial pill click → Pro tab (so user can subscribe before trial ends)
+els.trialPillNav?.addEventListener("click", focusProTab);
+els.trialPillNav?.style?.setProperty("cursor", "pointer");
 
 // Any locked button with data-pro-feature → focus Pro tab
 document.addEventListener("click", (e) => {

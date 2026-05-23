@@ -63,11 +63,14 @@ async function isOwnerKey(key) {
 export async function setLicense(rawKey) {
   const key = String(rawKey || "").trim().toUpperCase();
 
-  // Owner / founder bypass — skips network call, grants enterprise tier locally.
+  // Owner / founder bypass — skips network call, mirrors the $4.99/mo Pro tier
+  // (tier=pro, 30-day rolling expiry) so the founder sees the same UX as paying
+  // customers. Rolls forward every time the key is re-verified.
   if (await isOwnerKey(key)) {
     const rec = makeRecord({
-      key, valid: true, tier: "enterprise",
-      expiresAt: null, networkOk: true,
+      key, valid: true, tier: "pro",
+      expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+      networkOk: true,
     });
     await chrome.storage.local.set({ [LICENSE_KEY]: rec });
     return rec;
@@ -123,12 +126,17 @@ export async function getLicenseStatus() {
   const cached = await getLicenseRaw();
   if (!cached || !cached.key) return { valid: false, reason: "no-license" };
 
-  // Owner key: never expires, never re-validates over network
+  // Owner key: always valid, rolls expiry forward on each read so the founder
+  // never gets locked out. Mirrors the $4.99/mo Pro tier UX.
   if (await isOwnerKey(cached.key)) {
-    if (!cached.valid) {
+    const needsRefresh = !cached.valid
+      || !cached.expiresAt
+      || cached.expiresAt < Date.now() + 7 * 24 * 60 * 60 * 1000;
+    if (needsRefresh) {
       const rec = makeRecord({
-        key: cached.key, valid: true, tier: "enterprise",
-        expiresAt: null, networkOk: true,
+        key: cached.key, valid: true, tier: "pro",
+        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+        networkOk: true,
       });
       await chrome.storage.local.set({ [LICENSE_KEY]: rec });
       return rec;

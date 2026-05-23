@@ -84,12 +84,15 @@ export async function setLicense(rawKey) {
     return rec;
   }
   const res = await fetchValidation(key);
+  const reason = res.networkOk === false
+    ? (res.diag || "network-error")
+    : (res.reason || null);
   const rec = makeRecord({
     key,
     valid: !!res.valid,
     tier: res.tier || null,
     expiresAt: res.expiresAt || null,
-    reason: res.reason || null,
+    reason,
     networkOk: res.networkOk !== false,
   });
   await chrome.storage.local.set({ [LICENSE_KEY]: rec });
@@ -159,7 +162,11 @@ export async function getLicenseStatus() {
     if (cached.valid && cached.checkedAt > now - GRACE_MS) {
       return { ...cached, fromGrace: true };
     }
-    return { valid: false, reason: "offline-grace-exceeded", key: cached.key };
+    return {
+      valid: false,
+      reason: res.diag || "backend-unreachable",
+      key: cached.key,
+    };
   }
 
   const rec = makeRecord({
@@ -224,19 +231,35 @@ function makeRecord(over) {
 }
 
 async function fetchValidation(key) {
+  // Race the fetch against a 6s timeout so users don't sit on a stalled
+  // popup when the backend is unreachable.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 6000);
   try {
     const res = await fetch(`${API_BASE}/v1/license/validate`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ key }),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
     if (!res.ok) {
       return { valid: false, reason: `http-${res.status}`, networkOk: true };
     }
     const data = await res.json();
     return { ...data, networkOk: true };
   } catch (err) {
-    console.warn("[SmartLocator] license fetch failed:", err);
-    return { networkOk: false };
+    clearTimeout(timeout);
+    const msg = String((err && err.message) || err);
+    // Distinguish "backend doesn't exist" from "user is offline"
+    const isDnsOrConnect =
+      err && (err.name === "AbortError"
+        || /Failed to fetch|NetworkError|ERR_NAME_NOT_RESOLVED|ERR_CONNECTION/i.test(msg));
+    console.warn("[SmartLocator] license fetch failed:", msg);
+    return {
+      networkOk: false,
+      diag: isDnsOrConnect ? "backend-unreachable" : "network-error",
+      diagMessage: msg,
+    };
   }
 }

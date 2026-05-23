@@ -1078,11 +1078,21 @@ async function refreshLicenseUI() {
         : "Lifetime";
     }
   } else {
-    // Surface invalid-key errors inline in the Unlicensed state
+    // Surface invalid-key errors inline in the Unlicensed state — but only
+    // when no trial is active. During trial the user has no obligation to
+    // verify and stale error chrome is just noise.
     if (els.licenseError) {
-      if (status?.reason && status.reason !== "no-license") {
-        els.licenseError.textContent = `License invalid: ${humanReason(status.reason)}`;
+      const trialActiveNow = (await sendBg({ type: "TRIAL_STATUS" }))?.active === true;
+      if (status?.reason && status.reason !== "no-license" && !trialActiveNow) {
+        const reason = status.reason;
+        const prefix = (reason === "backend-unreachable" || reason === "network-error" || reason === "offline-grace-exceeded")
+          ? "Could not verify"
+          : "License invalid";
+        els.licenseError.textContent = `${prefix}: ${humanReason(reason)}`;
         els.licenseError.classList.remove("hidden");
+      } else {
+        els.licenseError.classList.add("hidden");
+        els.licenseError.textContent = "";
       }
     }
     // Pre-fill input from any saved-but-invalid key (rare case)
@@ -1150,13 +1160,19 @@ async function refreshLicenseUI() {
 
 function humanReason(r) {
   switch (r) {
-    case "invalid-format":         return "Invalid format";
-    case "not-found":              return "Not found";
-    case "expired":                return "Expired";
-    case "cancelled":              return "Cancelled";
+    case "invalid-format":         return "Wrong key format (expected SL-XXXX-XXXX-XXXX or LemonSqueezy UUID)";
+    case "not-found":              return "Key not found in our database — double-check the key from your purchase email";
+    case "expired":                return "Subscription expired — renew to reactivate";
+    case "cancelled":              return "Subscription cancelled";
     case "refunded":               return "Refunded";
-    case "offline-grace-exceeded": return "Offline too long";
-    default:                       return r ? `Error: ${r}` : "Invalid";
+    case "backend-unreachable":    return "License server unavailable — check your internet, or contact support if this persists";
+    case "network-error":          return "Network error reaching license server — try again in a moment";
+    case "offline-grace-exceeded": return "Offline for too long — reconnect to the internet and try again";
+    case "no-license":             return "No license entered yet";
+    default: {
+      if (typeof r === "string" && r.startsWith("http-")) return `License server error (${r.replace("http-", "HTTP ")})`;
+      return r ? `Error: ${r}` : "Invalid";
+    }
   }
 }
 
@@ -1241,7 +1257,12 @@ els.licenseVerifyBtn?.addEventListener("click", async () => {
   if (res?.valid) {
     showToast("Pro activated");
   } else if (els.licenseError) {
-    els.licenseError.textContent = `License invalid: ${humanReason(res?.reason || "unknown")}`;
+    const reason = res?.reason || "unknown";
+    // When backend is unreachable, distinguish from "key is wrong"
+    const prefix = (reason === "backend-unreachable" || reason === "network-error" || reason === "offline-grace-exceeded")
+      ? "Could not verify"
+      : "License invalid";
+    els.licenseError.textContent = `${prefix}: ${humanReason(reason)}`;
     els.licenseError.classList.remove("hidden");
   }
   refreshLicenseUI();

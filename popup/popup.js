@@ -1209,15 +1209,13 @@ document.querySelectorAll(".sub-tab").forEach((tab) => {
   });
 });
 
-// Auto-format license key as user types (SL-XXXX-XXXX-XXXX)
+// Light-touch normalization: uppercase + cap length. Accepts both the
+// native SL-XXXX-XXXX-XXXX format and LemonSqueezy UUIDs
+// (XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX, 36 chars).
 els.licenseKeyInput?.addEventListener("input", (e) => {
-  let v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-  if (v.startsWith("SL")) v = v.slice(2);
-  let out = "SL";
-  if (v.length > 0) out += "-" + v.slice(0, 4);
-  if (v.length > 4) out += "-" + v.slice(4, 8);
-  if (v.length > 8) out += "-" + v.slice(8, 12);
-  e.target.value = out;
+  let v = e.target.value.toUpperCase();
+  if (v.length > 36) v = v.slice(0, 36);
+  e.target.value = v;
 });
 
 /* ---------------- Boot ---------------- */

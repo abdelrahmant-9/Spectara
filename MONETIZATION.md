@@ -71,7 +71,7 @@ These constraints rule out:
 
 3. **Single endpoint.** One serverless function: `POST /v1/license/validate`. Returns `{ valid, tier, expiresAt }`. No user data sent — just the key. Hosted on Cloudflare Workers (free tier handles 100k requests/day).
 
-4. **Stripe / Paddle / LemonSqueezy handles all payment.** No PCI scope. LemonSqueezy is the recommended choice: handles VAT in 60+ countries, issues license keys natively via webhook.
+4. **Polar.sh handles all payment.** No PCI scope. Polar is the chosen merchant of record: handles VAT in 60+ countries, issues UUID license keys natively, GitHub-OAuth signup (no KYC paperwork), 4% + $0.40 per transaction. Alternatives: Paddle (5% + $0.50, stricter KYC), Gumroad (10% flat), Stripe direct (cheapest but needs own backend + Stripe Atlas for non-US entities).
 
 5. **Pro module is lazy-loaded.** Free users never download the Pro JS. Use `chrome.scripting.executeScript` to inject Pro modules from the extension package only when license is valid.
 
@@ -214,10 +214,10 @@ export default {
 };
 ```
 
-**LemonSqueezy webhook** populates the licenses table on purchase:
+**Polar webhook** populates the licenses table on purchase:
 
 ```js
-// /v1/webhook/lemonsqueezy
+// /v1/webhook/polar
 // On order_created:
 INSERT INTO licenses (key, email, tier, status, expires_at, created_at)
 VALUES (?, ?, 'pro', 'active', ?, strftime('%s','now')*1000)
@@ -267,7 +267,7 @@ These are pure UI signals — no Pro code is downloaded, just an upgrade CTA.
 | Cloudflare Workers | $0 | Free tier: 100k req/day → 3M/month |
 | Cloudflare D1 | $0 | Free tier: 5 GB |
 | Cloudflare R2 | $0–5 | Free tier: 10 GB egress / month |
-| LemonSqueezy | 5% + $0.50 per sale | Handles VAT, EU tax, refunds |
+| Polar.sh | 4% + $0.40 per sale | Handles VAT, EU tax, refunds, native UUID license keys |
 | Domain (smartselenium.dev) | $1 | $12/yr namecheap |
 | Email (support@) | $0 | Forward via Cloudflare Email Routing |
 | **Total fixed** | **~$1/mo** | Until ~1000 paying users |
@@ -283,7 +283,7 @@ When you decide to ship Pro:
 1. Add `pro/` directory with feature modules
 2. Add `background/license.js` + Settings tab in popup
 3. Deploy CF Worker + create D1 database
-4. Set up LemonSqueezy product + webhook → CF Worker
+4. Set up Polar.sh product + license-keys benefit + webhook → CF Worker
 5. Free users see the new UI but nothing changes for them
 6. Ship a `1.4.0` version with the Pro plumbing
 7. Announce Pro via LinkedIn + email list
@@ -306,7 +306,7 @@ When you decide to ship Pro:
 - ❌ Force account creation for free users
 - ❌ Add analytics SDK to "measure adoption" — Chrome Web Store stats are enough
 - ❌ Bundle the Pro modules in the free build
-- ❌ Use Stripe directly (PCI scope is real); use LemonSqueezy/Paddle as merchant of record
+- ❌ Use Stripe directly (PCI scope is real); use Polar / Paddle / Gumroad as merchant of record
 - ❌ Build a SaaS dashboard before you have 100 paying users
 - ❌ Add a referral program before product-market fit
 - ❌ Raise venture capital — this is a $200-500 MRR solo bootstrap, not a unicorn

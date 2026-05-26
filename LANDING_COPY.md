@@ -166,7 +166,7 @@ Smart Selenium Locator Generator
 Core open source under MIT — Pro builds licensed.
 Built for QA Automation Engineers who are tired of writing locators.
 
-GitHub · Chrome Web Store · Privacy · LemonSqueezy
+GitHub · Chrome Web Store · Privacy · Polar.sh
 © 2026 Abdelrahman Tarek
 ```
 

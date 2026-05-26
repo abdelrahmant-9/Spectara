@@ -1000,11 +1000,13 @@ els.onboardClose?.addEventListener("click", async () => {
    Pro / License — settings modal, upsell, lazy module loader
    =========================================================== */
 
-// Single LemonSqueezy checkout URL — the hosted page lets the user pick
-// monthly or yearly variant. MV3 forbids embedding lemon.js inside the popup,
-// so we deep-link via chrome.tabs.create. Append ?variant query in the future
-// if you want pre-selection per click.
-const PRO_BUY_URL = "https://smartselenium.lemonsqueezy.com/checkout/buy/5c9e7b64-ec4a-4057-8133-42f899fcbc7f";
+// Single Polar.sh checkout URL — the hosted page lets the user pick monthly
+// or yearly variant. Opened via chrome.tabs.create (MV3 forbids embedding
+// any third-party script inside the popup under CSP).
+//
+// TODO: replace <ORG> and <PRODUCT-SLUG> with the values from your Polar
+// dashboard after you create the "Smart Selenium Pro" product.
+const PRO_BUY_URL = "https://polar.sh/smart-selenium/smart-selenium-pro";
 const PRO_BUY_URL_MONTHLY = PRO_BUY_URL;
 const PRO_BUY_URL_YEARLY  = PRO_BUY_URL;
 let selectedPlan = "monthly"; // tile toggle only changes the displayed price label
@@ -1066,7 +1068,7 @@ function formatTrialRemaining(endsAt) {
 
 function humanReason(r) {
   switch (r) {
-    case "invalid-format":         return "Wrong key format (expected SL-XXXX-XXXX-XXXX or LemonSqueezy UUID)";
+    case "invalid-format":         return "Wrong key format (expected SL-XXXX-XXXX-XXXX or Polar UUID)";
     case "not-found":              return "Key not found in our database — double-check the key from your purchase email";
     case "expired":                return "Subscription expired — renew to reactivate";
     case "cancelled":              return "Subscription cancelled";
@@ -1247,7 +1249,7 @@ function selectPlan(plan) {
 els.planMonthly?.addEventListener("click", () => selectPlan("monthly"));
 els.planYearly?.addEventListener("click", () => selectPlan("yearly"));
 
-// Buy → open the right LemonSqueezy checkout in a new browser tab (MV3-safe).
+// Buy → open the Polar checkout in a new browser tab (MV3-safe).
 els.buyProBtn?.addEventListener("click", () => {
   const url = selectedPlan === "yearly" ? PRO_BUY_URL_YEARLY : PRO_BUY_URL_MONTHLY;
   chrome.tabs.create({ url });
@@ -1357,7 +1359,7 @@ document.querySelectorAll(".sub-tab").forEach((tab) => {
 });
 
 // Light-touch normalization: uppercase + cap length. Accepts both the
-// native SL-XXXX-XXXX-XXXX format and LemonSqueezy UUIDs
+// native SL-XXXX-XXXX-XXXX format and Polar.sh UUIDs
 // (XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX, 36 chars).
 els.licenseKeyInput?.addEventListener("input", (e) => {
   let v = e.target.value.toUpperCase();

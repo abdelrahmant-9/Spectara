@@ -1,8 +1,10 @@
-# Smart Selenium — License API (Cloudflare Worker)
+# Smart Selenium — License API (Cloudflare Worker, Polar.sh)
 
 Tiny, dependency-free license-validation backend for the Smart Selenium Pro
 tier. Free Chrome users never reach this code path — only users who paste a
-license key into the extension settings trigger one POST per 24 hours.
+Polar-issued license key into the extension trigger one POST per 24 hours.
+
+Payment + license-key provider: **Polar.sh** (dev-friendly merchant of record).
 
 ---
 
@@ -11,14 +13,14 @@ license key into the extension settings trigger one POST per 24 hours.
 | Method | Path | Caller | Purpose |
 |--------|------|--------|---------|
 | `POST` | `/v1/license/validate` | extension | Returns `{ valid, tier, expiresAt }` |
-| `POST` | `/v1/webhook/lemonsqueezy` | LemonSqueezy | Provisions / cancels licenses on order + subscription events |
+| `POST` | `/v1/webhook/polar` | Polar | Standard-Webhooks-signed events; provisions / cancels licenses |
 | `GET`  | `/v1/health` | uptime checks | `{ ok: true, ts }` |
 
 ### `/v1/license/validate`
 
 Request:
 ```json
-{ "key": "SL-A23B-C45D-E67F" }
+{ "key": "8B4D00AD-3D0D-40DA-XXXX-XXXXXXXXXXXX" }
 ```
 Response (valid):
 ```json
@@ -29,75 +31,104 @@ Response (invalid):
 { "valid": false, "reason": "not-found" | "expired" | "cancelled" | "invalid-format" }
 ```
 
-### `/v1/webhook/lemonsqueezy`
+Accepts UUID format (Polar-issued) **and** the legacy `SL-XXXX-XXXX-XXXX`
+format from earlier dev builds.
 
-HMAC-SHA256 signed via `X-Signature` header. Events handled:
+### `/v1/webhook/polar`
+
+Signed via Standard Webhooks spec — three headers:
+
+```
+webhook-id:         01HJZE...
+webhook-timestamp:  1716489600
+webhook-signature:  v1,Base64HMACsig...
+```
+
+Signature computed as:
+```
+HMAC_SHA256( base64decode(secret_without_whsec_prefix),
+             `${id}.${timestamp}.${rawBody}` )
+→ base64
+```
+
+Events handled:
 
 | Event | Action |
 |-------|--------|
-| `order_created` | Inserts a lifetime license keyed by `ls_order_id` |
-| `subscription_created` | Inserts a subscription license |
-| `subscription_updated` | Updates `expires_at` + tier |
-| `subscription_resumed` | Reactivates a cancelled subscription |
-| `subscription_cancelled` / `subscription_expired` / `subscription_paused` | Marks the row `status = 'cancelled'` |
+| `license_key.created` / `license_key.updated` | Insert or update license row with the Polar-issued key (primary code path when license-keys feature is enabled on the product) |
+| `order.created` | Linkage row; if product has no license-key feature, generates a fallback `SL-` key |
+| `subscription.created` / `subscription.updated` / `subscription.active` / `subscription.uncanceled` | Sets `status='active'`, updates `expires_at` from `current_period_end` |
+| `subscription.canceled` / `subscription.revoked` | Marks `status='cancelled'` |
 
-Unhandled events return `200` so LemonSqueezy stops retrying.
+Unhandled events return `200` so Polar stops retrying.
 
 ---
 
-## Setup (one-time, ~5 minutes)
+## One-time setup (~10 minutes)
+
+### A. Polar dashboard
+
+1. Sign up at https://polar.sh (GitHub OAuth, instant).
+2. Create an organization (e.g. `smart-selenium`).
+3. **Products → New product** → "Smart Selenium Pro".
+4. Add variants:
+   - **Monthly** — $4.99 / month recurring
+   - **Yearly** — $39 / year recurring
+5. On the product → **Benefits** → **Add benefit** → **License keys**. Polar will generate a UUID-format license per checkout and email it to the buyer.
+6. On each variant → **Metadata** → add `{ "tier": "pro" }` so the worker can route to the right tier (use `"team"` or `"enterprise"` for higher tiers).
+7. Copy the **checkout URL** for the product. Update `popup/popup.js`:
+   ```js
+   const PRO_BUY_URL = "https://polar.sh/<org>/<product-slug>";
+   ```
+
+### B. Cloudflare Worker
 
 ```bash
-# 0. From the repo root:
 cd worker/
-
-# 1. Install wrangler
-npm i -g wrangler
-
-# 2. Authenticate
-wrangler login
-
-# 3. Create the D1 database
-wrangler d1 create smart_selenium_licenses
-#  → copy the returned database_id into wrangler.toml
-
-# 4. Apply schema
-wrangler d1 execute smart_selenium_licenses --file=schema.sql
-
-# 5. Store the LemonSqueezy webhook secret
-wrangler secret put LS_WEBHOOK_SECRET
-#  → paste the secret from LemonSqueezy → Settings → Webhooks
-
-# 6. Deploy
-wrangler deploy
+bash deploy.sh
 ```
 
-Output:
-```
-Published smart-selenium-licenses to https://smart-selenium-licenses.<account>.workers.dev
-```
+The script:
+1. Installs `wrangler` if missing
+2. Triggers `wrangler login` if not authenticated
+3. Creates the D1 database and writes its id into `wrangler.toml`
+4. Applies `schema.sql`
+5. Prompts you to paste the Polar webhook signing secret (`whsec_...`)
+6. Deploys the worker
+7. Smoke-tests `/v1/health`
+8. Prints the deployed URL + exact webhook URL to paste back into Polar
 
-Bind a custom domain (recommended) — `api.smartselenium.dev` — from the
-Cloudflare dashboard so the extension client doesn't hard-code a workers.dev URL.
+### C. Polar webhook configuration
 
----
+Back in the Polar dashboard:
 
-## LemonSqueezy configuration
-
-1. Create a product (e.g. **"Smart Selenium Pro"**, `$4.99/mo`) and one or more variants.
-2. On each variant, open **Advanced** → **Custom Data** and add:
-   ```json
-   { "tier": "pro" }
+1. **Settings → Webhooks → Add endpoint**.
+2. URL: paste `<DEPLOYED_URL>/v1/webhook/polar` from the deploy script summary.
+3. Event subscriptions — tick:
+   - `license_key.created`
+   - `license_key.updated`
+   - `order.created`
+   - `subscription.created`
+   - `subscription.updated`
+   - `subscription.active`
+   - `subscription.canceled`
+   - `subscription.revoked`
+4. **Reveal secret** → copy → already pasted into `wrangler secret put POLAR_WEBHOOK_SECRET`. If you skipped that step, run it now:
+   ```bash
+   wrangler secret put POLAR_WEBHOOK_SECRET
    ```
-   (or `"team"` / `"enterprise"` for higher tiers).
-3. In **Settings → Webhooks**, add an endpoint pointing at
-   `https://api.smartselenium.dev/v1/webhook/lemonsqueezy`.
-4. Subscribe to the events: `order_created`, `subscription_*`.
-5. Copy the **signing secret** into `wrangler secret put LS_WEBHOOK_SECRET`.
+5. Click **Send test event** in Polar → verify worker returns `200 ok`.
 
-LemonSqueezy will auto-email the license key to the buyer when you enable
-**License Keys** on the product. Custom email delivery (Resend, Postmark) is
-a one-block addition inside `upsertFromOrder`.
+### D. End-to-end test
+
+1. In Polar, switch on **Sandbox / Test mode**.
+2. Buy your own product with the test card `4242 4242 4242 4242`.
+3. Webhook fires → row appears in D1:
+   ```bash
+   wrangler d1 execute smart_selenium_licenses --remote \
+     --command="SELECT key, email, tier, status, expires_at FROM licenses ORDER BY created_at DESC LIMIT 5;"
+   ```
+4. Paste the returned key (or the one Polar emailed you) into the extension's Pro tab → click **Verify** → should flip to "Pro Active".
 
 ---
 
@@ -105,45 +136,40 @@ a one-block addition inside `upsertFromOrder`.
 
 | Item | Free-tier ceiling | Monthly cost |
 |------|------------------|--------------|
-| Workers requests | 100k / day | $0 |
-| D1 reads | 5M / day | $0 |
-| D1 writes | 100k / day | $0 |
-| D1 storage | 5 GB | $0 |
+| Cloudflare Workers | 100k req/day | $0 |
+| Cloudflare D1 reads | 5M / day | $0 |
+| Cloudflare D1 writes | 100k / day | $0 |
+| Cloudflare D1 storage | 5 GB | $0 |
+| **Polar.sh fees** | — | **4% + $0.40 per transaction** |
 
-At 10 paying users × 1 validation / day × 30 days = **300 reqs/month**.
-At 10,000 paying users → **300k reqs/month**, still well within free tier.
+At 10 paying users × 1 validation/day × 30 days = **300 reqs/month**.
+At 10,000 paying users → **300k reqs/month**, still inside the free tier.
 
 ---
 
-## Operations
-
-Daily tasks: none. The worker is stateless and the DB is self-cleaning
-(expired rows flip to `status='expired'` on read).
-
-Manual admin operations:
+## Admin SQL
 
 ```bash
-# Find all licenses for an email
-wrangler d1 execute smart_selenium_licenses --command="SELECT key, tier, status, expires_at FROM licenses WHERE email = 'x@y.com';"
+# Find licenses for an email
+wrangler d1 execute smart_selenium_licenses --remote \
+  --command="SELECT key, tier, status, expires_at FROM licenses WHERE email = 'x@y.com';"
 
-# Revoke a license (refunds, abuse)
-wrangler d1 execute smart_selenium_licenses --command="UPDATE licenses SET status='refunded', updated_at=strftime('%s','now')*1000 WHERE key='SL-AAAA-BBBB-CCCC';"
+# Revoke a license (refund / abuse)
+wrangler d1 execute smart_selenium_licenses --remote \
+  --command="UPDATE licenses SET status='refunded', updated_at=strftime('%s','now')*1000 WHERE key='XXXXXXXX-XXXX-...';"
 
-# Stats
-wrangler d1 execute smart_selenium_licenses --command="SELECT status, COUNT(*) FROM licenses GROUP BY status;"
+# Tier breakdown
+wrangler d1 execute smart_selenium_licenses --remote \
+  --command="SELECT status, tier, COUNT(*) FROM licenses GROUP BY status, tier;"
 ```
 
 ---
 
 ## Security posture
 
-- Webhook routes require valid HMAC signature; bad sig → `401`.
+- Webhook routes require a valid Standard Webhooks signature; bad sig → `401`.
+- 5-minute timestamp window rejects replays.
 - Constant-time signature comparison (no early-exit timing leak).
-- License keys use a 32-char confusable-free alphabet, 3 blocks of 4 chars,
-  ~2^60 keyspace. Brute-forcing a single key requires ~`10^18` requests
-  against the worker — Cloudflare's rate limits stop that long before
-  success.
-- No PII beyond email is stored. No card data ever touches this worker
-  (LemonSqueezy is merchant of record).
-- D1 binding limits this worker's blast radius — no other Cloudflare
-  service can be reached even if the worker is compromised.
+- Polar's license keys are UUIDs (~2^128 keyspace). Brute-force is infeasible against Cloudflare's rate limits.
+- No PII beyond email is stored. No card data ever touches this worker (Polar is merchant of record).
+- D1 binding limits the worker's blast radius — no other Cloudflare service can be reached if the worker is compromised.

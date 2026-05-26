@@ -6,8 +6,8 @@
 #   3. wrangler d1 create smart_selenium_licenses
 #      → copy the returned database_id into the [[d1_databases]] block below
 #   4. wrangler d1 execute smart_selenium_licenses --file=worker/schema.sql
-#   5. wrangler secret put LS_WEBHOOK_SECRET
-#      → paste the LemonSqueezy webhook signing secret when prompted
+#   5. wrangler secret put POLAR_WEBHOOK_SECRET
+#      → paste the Polar webhook signing secret (whsec_...) when prompted
 #   6. wrangler deploy
 #
 # Custom domain (recommended): bind api.smartselenium.dev to this worker

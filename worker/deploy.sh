@@ -10,7 +10,7 @@
 # Prerequisites:
 #   - Node.js + npm installed
 #   - Cloudflare account (free tier is fine)
-#   - LemonSqueezy product with a Webhook secret ready to paste
+#   - Polar.sh product with a Webhook secret ready to paste
 
 set -euo pipefail
 
@@ -88,17 +88,17 @@ say "Applying schema from $SCHEMA_FILE"
 wrangler d1 execute "$DB_NAME" --remote --file="$SCHEMA_FILE" || die "Schema apply failed"
 
 # ──────────────────────────────────────────────────────────────
-# 5. LemonSqueezy webhook secret
+# 5. Polar webhook secret
 # ──────────────────────────────────────────────────────────────
 EXISTING_SECRETS="$(wrangler secret list 2>/dev/null || echo "")"
-if echo "$EXISTING_SECRETS" | grep -q "LS_WEBHOOK_SECRET"; then
-  say "LS_WEBHOOK_SECRET already set — skipping (delete with 'wrangler secret delete LS_WEBHOOK_SECRET' to rotate)"
+if echo "$EXISTING_SECRETS" | grep -q "POLAR_WEBHOOK_SECRET"; then
+  say "POLAR_WEBHOOK_SECRET already set — skipping (delete with 'wrangler secret delete POLAR_WEBHOOK_SECRET' to rotate)"
 else
-  say "Setting LS_WEBHOOK_SECRET"
+  say "Setting POLAR_WEBHOOK_SECRET"
   echo
-  ask "Paste LemonSqueezy webhook signing secret (find in LS dashboard → Settings → Webhooks → your endpoint):"
+  ask "Paste Polar webhook signing secret (Polar dashboard → Settings → Webhooks → your endpoint → Reveal secret, starts with whsec_):"
   echo
-  wrangler secret put LS_WEBHOOK_SECRET || die "Secret put failed"
+  wrangler secret put POLAR_WEBHOOK_SECRET || die "Secret put failed"
 fi
 
 # ──────────────────────────────────────────────────────────────
@@ -139,10 +139,13 @@ Webhook secret:      stored
 
 Next steps:
 
-  1. In LemonSqueezy dashboard → Settings → Webhooks → add endpoint:
-       URL:    ${DEPLOYED_URL:-<your-worker-url>}/v1/webhook/lemonsqueezy
-       Events: order_created, subscription_created, subscription_updated,
-               subscription_cancelled, subscription_expired
+  1. In Polar dashboard → Settings → Webhooks → add endpoint:
+       URL:    ${DEPLOYED_URL:-<your-worker-url>}/v1/webhook/polar
+       Events: license_key.created, license_key.updated,
+               order.created,
+               subscription.created, subscription.updated,
+               subscription.active, subscription.canceled,
+               subscription.revoked
 
   2. Update background/license.js API_BASE if the deployed URL is
      not https://api.smartselenium.dev:

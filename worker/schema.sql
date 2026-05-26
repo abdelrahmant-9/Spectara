@@ -1,4 +1,4 @@
--- Smart Selenium — license database schema (Cloudflare D1 / SQLite)
+-- Spectara — license database schema (Cloudflare D1 / SQLite)
 -- Polar.sh as the payment + license-key provider.
 --
 -- Apply:

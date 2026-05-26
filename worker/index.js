@@ -1,5 +1,5 @@
 /**
- * Smart Selenium — license API (Cloudflare Worker, Polar.sh backend)
+ * Spectara — license API (Cloudflare Worker, Polar.sh backend)
  *
  * Routes:
  *   POST /v1/license/validate          — extension client

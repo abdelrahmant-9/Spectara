@@ -1,5 +1,5 @@
 /* ========================================================
-   Smart Selenium Locator Generator
+   Spectara
    Popup styling — macOS Tahoe / 26.5 inspired
    "Liquid glass": translucent surfaces, vibrant accent,
    SF Pro typography, rounded geometry, soft shadows.
@@ -907,6 +907,9 @@ html::-webkit-scrollbar { width: 0; height: 0; }
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin: 4px 0 12px;
+}
+.price-tiles-single {
+  grid-template-columns: 1fr;
 }
 .price-tile {
   position: relative;

@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Smart Selenium Locator Generator**
+**Spectara**
 **Effective date:** May 22, 2026
 **Maintainer:** Abdelrahman Tarek (`abdelrahman.tarek.dev@gmail.com`)
 
@@ -39,7 +39,7 @@ A storage cap of 100 most-recent captures is enforced so the extension's local s
 **None.**
 
 This extension makes no network requests of any kind. It does not contact any server operated by the maintainer or any third party. It contains no analytics SDK, no fingerprinting code, no remote-script loaders, and no telemetry. You can verify this by reading the source code:
-[https://github.com/abdelrahmant-9/smart-selenium-locator-generator](https://github.com/abdelrahmant-9/smart-selenium-locator-generator)
+[https://github.com/abdelrahmant-9/Spectara](https://github.com/abdelrahmant-9/Spectara)
 
 The only network calls Chrome itself may make are unrelated to the extension's functionality (e.g. Chrome's own auto-update mechanism).
 
@@ -83,7 +83,7 @@ If this policy is updated, the effective date at the top will change and a notic
 ## 8. Open-source verification
 
 This extension is licensed under MIT and the full source code is public. You can audit every byte that runs on your machine:
-[https://github.com/abdelrahmant-9/smart-selenium-locator-generator](https://github.com/abdelrahmant-9/smart-selenium-locator-generator)
+[https://github.com/abdelrahmant-9/Spectara](https://github.com/abdelrahmant-9/Spectara)
 
 To verify that no data leaves the device, you can open Chrome DevTools → Network tab while using the extension and confirm that no requests originate from the extension's runtime.
 
@@ -95,4 +95,4 @@ Questions, concerns, or data requests:
 
 **Abdelrahman Tarek**
 Email: `abdelrahman.tarek.dev@gmail.com`
-GitHub Issues: [https://github.com/abdelrahmant-9/smart-selenium-locator-generator/issues](https://github.com/abdelrahmant-9/smart-selenium-locator-generator/issues)
+GitHub Issues: [https://github.com/abdelrahmant-9/Spectara/issues](https://github.com/abdelrahmant-9/Spectara/issues)

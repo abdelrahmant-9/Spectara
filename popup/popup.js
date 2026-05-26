@@ -422,7 +422,7 @@ function formatAllCaptures(list, fmt) {
   }
 
   if (fmt === "locators") {
-    const lines = [`// ${list.length} capture${list.length === 1 ? "" : "s"} — Smart Selenium`];
+    const lines = [`// ${list.length} capture${list.length === 1 ? "" : "s"} — Spectara`];
     enriched.forEach((c) => {
       const best = c.isList && c.listLocator ? c.listLocator : c.best;
       const tag = (c.element.tag || "").toLowerCase();
@@ -1005,11 +1005,14 @@ els.onboardClose?.addEventListener("click", async () => {
 // any third-party script inside the popup under CSP).
 //
 // TODO: replace <ORG> and <PRODUCT-SLUG> with the values from your Polar
-// dashboard after you create the "Smart Selenium Pro" product.
-const PRO_BUY_URL = "https://polar.sh/smart-selenium/smart-selenium-pro";
+// dashboard after you create the "Spectara Pro" product.
+// Spectara Pro · Monthly only at launch. Yearly checkout link is added when
+// the yearly Polar product exists; for now the yearly tile is hidden in
+// popup.html to keep the UI honest.
+const PRO_BUY_URL = "https://buy.polar.sh/polar_cl_9cN4Off424Vwg8HdCmvDASkEu4bpE6ySMje2I2wkLom";
 const PRO_BUY_URL_MONTHLY = PRO_BUY_URL;
-const PRO_BUY_URL_YEARLY  = PRO_BUY_URL;
-let selectedPlan = "monthly"; // tile toggle only changes the displayed price label
+const PRO_BUY_URL_YEARLY  = PRO_BUY_URL; // same URL until yearly product exists
+let selectedPlan = "monthly"; // locked to monthly at launch (yearly product not created yet)
 
 let proLoaded = false;
 let proStatus = { valid: false, tier: null };

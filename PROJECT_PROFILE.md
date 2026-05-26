@@ -1,13 +1,13 @@
 <div align="center">
 
-# Smart Selenium Locator Generator
+# Spectara
 ### Complete Project Profile
 
 **A Chrome extension that turns 30 minutes of locator hunting into 30 seconds of clicking.**
 
 `v1.3` · `Manifest V3` · `MIT Core` · `Open-Core`
 
-[GitHub](https://github.com/abdelrahmant-9/smart-selenium-locator-generator)
+[GitHub](https://github.com/abdelrahmant-9/Spectara)
 
 </div>
 
@@ -21,7 +21,7 @@
 
 ## 2. Executive Summary
 
-Smart Selenium Locator Generator is a Chrome browser extension built for Quality Assurance Automation Engineers and Software Development Engineers in Test (SDETs). It eliminates the most repetitive task in test automation: writing locators.
+Spectara is a Chrome browser extension built for Quality Assurance Automation Engineers and Software Development Engineers in Test (SDETs). It eliminates the most repetitive task in test automation: writing locators.
 
 The tool injects an inspect mode into any webpage, captures elements with a single click, ranks five different locator strategies by stability, and generates production-ready Selenium Java code plus a full Page Object Model class. It supports multi-element capture, automatic list/collection detection, and a Pause mode for grabbing items inside hover-triggered popups.
 
@@ -185,7 +185,7 @@ Click one item in a list → generates `List<WebElement>` locator + iteration lo
 | **Katalon Recorder** | End-to-end recorder | Heavy, Katalon-locked | Free (lead gen) |
 | **Chrome DevTools** | Native, free | Absolute XPath only, no ranking | Free |
 | **Playwright Inspector** | Excellent, official | Playwright-only | Free |
-| **Smart Selenium** | Java + POM + multi-capture + list detection + pause mode + native macOS UI | iframe + Shadow DOM not yet supported | Free → Pro (planned) |
+| **Spectara** | Java + POM + multi-capture + list detection + pause mode + native macOS UI | iframe + Shadow DOM not yet supported | Free → Pro (planned) |
 
 ### Positioning
 
@@ -218,7 +218,7 @@ Cheaper than SelectorsHub Pro. Faster UX than DevTools. Smarter than ChroPath. J
 ### Architecture
 
 ```
-smart-selenium-locator-generator/
+Spectara/
 ├── manifest.json              Manifest V3 config
 ├── popup/
 │   ├── popup.html             Compact + expanded views
@@ -390,14 +390,14 @@ After years of writing Selenium tests, I got tired of hand-crafting XPaths and r
 
 - **Email:** abdelrahman.tarek.dev@gmail.com
 - **GitHub:** https://github.com/abdelrahmant-9
-- **Repository:** https://github.com/abdelrahmant-9/smart-selenium-locator-generator
+- **Repository:** https://github.com/abdelrahmant-9/Spectara
 - **LinkedIn:** *(add your URL)*
 
 ---
 
 <div align="center">
 
-**Smart Selenium Locator Generator**
+**Spectara**
 *Built for QA Automation Engineers who are tired of writing locators.*
 
 Last updated: May 2026 · v1.2

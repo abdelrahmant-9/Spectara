@@ -25,7 +25,7 @@ Tool recommendation: **Figma** (free) with the 1280×800 frame template. Use mac
 │  Get production-ready Selenium locators in 3 seconds.    │
 │                                                          │
 │  ┌────────────────┐         ┌──────────────────┐         │
-│  │                │         │  Smart Selenium  │         │
+│  │                │         │  Spectara  │         │
 │  │  Browser page  │  ───→   │   popup with     │         │
 │  │  with login    │ arrow   │   5 locator      │         │
 │  │  form, mouse   │  blue   │   cards stacked  │         │
@@ -60,7 +60,7 @@ Tool recommendation: **Figma** (free) with the 1280×800 frame template. Use mac
 │  Selenium Java, ready to paste.                          │
 │                                                          │
 │  ┌──────────────────────────────────────────────────┐    │
-│  │ Smart Selenium · Java tab                        │    │
+│  │ Spectara · Java tab                        │    │
 │  │ ┌──────────────────────────────────────────────┐ │    │
 │  │ │ // BUTTON — id                               │ │    │
 │  │ │ WebElement loginButton = driver.findElement( │ │    │
@@ -92,7 +92,7 @@ Tool recommendation: **Figma** (free) with the 1280×800 frame template. Use mac
 │  Full Page Object Model, written for you.                │
 │                                                          │
 │  ┌──────────────────────────────────────────────────┐    │
-│  │ Smart Selenium · POM tab                         │    │
+│  │ Spectara · POM tab                         │    │
 │  │ ┌──────────────────────────────────────────────┐ │    │
 │  │ │ public class LoginPage {                     │ │    │
 │  │ │                                              │ │    │
@@ -165,7 +165,7 @@ Tool recommendation: **Figma** (free) with the 1280×800 frame template. Use mac
 │  Click one row. Get a List<WebElement>.                  │
 │                                                          │
 │  ┌────────────────┐         ┌──────────────────┐         │
-│  │  Browser:      │         │ Smart Selenium  │         │
+│  │  Browser:      │         │ Spectara  │         │
 │  │  ┌──────────┐  │         │ List card:      │         │
 │  │  │ Row 1    │← │  ───→  │ "List · 12      │         │
 │  │  │ Row 2    │  │ click  │  items"         │         │

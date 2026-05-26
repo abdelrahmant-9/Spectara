@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# deploy.sh — one-shot Cloudflare Worker + D1 deploy for the Smart Selenium
+# deploy.sh — one-shot Cloudflare Worker + D1 deploy for the Spectara
 # license backend. Idempotent: safe to re-run.
 #
 # Usage:
@@ -148,12 +148,12 @@ Next steps:
                subscription.revoked
 
   2. Update background/license.js API_BASE if the deployed URL is
-     not https://api.smartselenium.dev:
+     not https://api.spectara.app:
        const API_BASE = "${DEPLOYED_URL:-<your-worker-url>}";
 
   3. Bind a custom domain (optional but recommended):
-       Cloudflare dashboard → Workers → smart-selenium-licenses →
-       Triggers → Add Custom Domain → api.smartselenium.dev
+       Cloudflare dashboard → Workers → spectara-licenses →
+       Triggers → Add Custom Domain → api.spectara.app
 
   4. Re-buy your own product in LS test mode to fire the webhook,
      then query the inserted license:

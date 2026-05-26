@@ -1,4 +1,4 @@
-# Cloudflare Worker config for the Smart Selenium license API.
+# Cloudflare Worker config for the Spectara license API.
 #
 # Setup:
 #   1. npm i -g wrangler
@@ -10,10 +10,10 @@
 #      → paste the Polar webhook signing secret (whsec_...) when prompted
 #   6. wrangler deploy
 #
-# Custom domain (recommended): bind api.smartselenium.dev to this worker
+# Custom domain (recommended): bind api.spectara.app to this worker
 # from the Cloudflare dashboard. The extension client points at this host.
 
-name = "smart-selenium-licenses"
+name = "spectara-licenses"
 main = "index.js"
 compatibility_date = "2025-01-01"
 workers_dev = true

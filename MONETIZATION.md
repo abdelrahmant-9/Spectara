@@ -80,7 +80,7 @@ These constraints rule out:
 ## 4. File Layout (additive)
 
 ```
-smart-selenium-locator-generator/
+Spectara/
 ├── manifest.json
 ├── background/
 │   ├── background.js          (existing, unchanged)
@@ -140,7 +140,7 @@ async function validateLicense(key) {
 
   // Cache stale → re-validate
   try {
-    const res = await fetch("https://api.smartselenium.dev/v1/license/validate", {
+    const res = await fetch("https://api.spectara.app/v1/license/validate", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ key }),
@@ -268,7 +268,7 @@ These are pure UI signals — no Pro code is downloaded, just an upgrade CTA.
 | Cloudflare D1 | $0 | Free tier: 5 GB |
 | Cloudflare R2 | $0–5 | Free tier: 10 GB egress / month |
 | Polar.sh | 4% + $0.40 per sale | Handles VAT, EU tax, refunds, native UUID license keys |
-| Domain (smartselenium.dev) | $1 | $12/yr namecheap |
+| Domain (spectara.app) | $1 | $12/yr namecheap |
 | Email (support@) | $0 | Forward via Cloudflare Email Routing |
 | **Total fixed** | **~$1/mo** | Until ~1000 paying users |
 

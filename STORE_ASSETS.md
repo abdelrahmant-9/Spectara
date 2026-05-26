@@ -10,13 +10,13 @@
 **Field max: 75 characters.**
 
 ```
-Smart Selenium Locator Generator — POM + Java Codegen
+Spectara — POM + Java Codegen
 ```
 
 (54 characters)
 
 Alternates:
-- `Smart Selenium — One-Click Locator & Java POM Generator` (55)
+- `Spectara — One-Click Locator & Java POM Generator` (55)
 - `Selenium Locator Generator: XPath, CSS, Java, POM in One Click` (61)
 
 ---
@@ -38,7 +38,7 @@ Click any element. Get stable Selenium locators, Java snippets, and full Page Ob
 **Field max: 16,000 characters. Markdown not rendered — plain text only, line breaks OK.**
 
 ```
-Smart Selenium Locator Generator is a Chrome extension built for QA Automation Engineers and SDETs who are tired of writing locators by hand.
+Spectara is a Chrome extension built for QA Automation Engineers and SDETs who are tired of writing locators by hand.
 
 Click any element on any webpage and instantly receive:
 • Five locator strategies (ID, Name, CSS Selector, Absolute XPath, Relative XPath)
@@ -122,21 +122,21 @@ This extension:
 • Stores all captures locally in chrome.storage.local
 • Core is open source under MIT on GitHub (open-core model)
 • Works completely offline for free users
-• Pro users only: sends one license-validation request per 24 hours to api.smartselenium.dev (license key only — no captures, no element data)
+• Pro users only: sends one license-validation request per 24 hours to api.spectara.app (license key only — no captures, no element data)
 
 ──────────────────────────────────────
 OPEN SOURCE
 ──────────────────────────────────────
 
 Open-core model. Core is MIT-licensed and fully public. Official Pro builds include licensed premium features and future cloud capabilities. Source code, issues, and contributions welcome:
-https://github.com/abdelrahmant-9/smart-selenium-locator-generator
+https://github.com/abdelrahmant-9/Spectara
 
 ──────────────────────────────────────
 SUPPORT
 ──────────────────────────────────────
 
 • Email: abdelrahman.tarek.dev@gmail.com
-• GitHub Issues: https://github.com/abdelrahmant-9/smart-selenium-locator-generator/issues
+• GitHub Issues: https://github.com/abdelrahmant-9/Spectara/issues
 
 Built by a QA Automation Engineer for QA Automation Engineers.
 ```

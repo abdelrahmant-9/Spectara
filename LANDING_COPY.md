@@ -1,7 +1,7 @@
 # Landing Page Copy
 
 > Drop-in copy for a single-page landing site (Framer, Carrd, Webflow, custom HTML).
-> Designed for `smartselenium.dev`. All wording aligned with the open-core positioning.
+> Designed for `spectara.app`. All wording aligned with the open-core positioning.
 
 ---
 
@@ -50,7 +50,7 @@ Hand-crafting locators is the worst part of test automation.
 ```
 You inherit a flaky test suite. Half the locators look like /div[3]/div[2]/span[1]. The other half break when a designer renames a CSS class. You spend more time fixing locators than writing tests.
 
-Smart Selenium kills that friction. Click an element. Get the most stable locator, ranked by reliability. Plus a Java snippet. Plus a full Page Object Model class. All in three seconds.
+Spectara kills that friction. Click an element. Get the most stable locator, ranked by reliability. Plus a Java snippet. Plus a full Page Object Model class. All in three seconds.
 ```
 
 ---
@@ -162,7 +162,7 @@ Pull the most-asked:
 ## Footer
 
 ```
-Smart Selenium Locator Generator
+Spectara
 Core open source under MIT — Pro builds licensed.
 Built for QA Automation Engineers who are tired of writing locators.
 
@@ -175,12 +175,12 @@ GitHub · Chrome Web Store · Privacy · Polar.sh
 ## Meta tags (for HTML <head>)
 
 ```html
-<title>Smart Selenium — Selenium locators from one click</title>
+<title>Spectara — Selenium locators from one click</title>
 <meta name="description" content="Chrome extension that turns one click into stable Selenium locators, Java snippets, and full Page Object Model classes for QA automation engineers.">
-<meta property="og:title" content="Smart Selenium Locator Generator">
+<meta property="og:title" content="Spectara">
 <meta property="og:description" content="Click any element. Get stable Selenium locators, Java snippets, and Page Object Model classes. Open-core: free MIT core + optional Pro tier.">
 <meta property="og:image" content="/og-image.png">
-<meta property="og:url" content="https://smartselenium.dev">
+<meta property="og:url" content="https://spectara.app">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 ```

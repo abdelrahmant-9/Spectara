@@ -24,7 +24,7 @@ const TRIAL_KEY = "smart_locator_trial";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const GRACE_MS = 30 * 24 * 60 * 60 * 1000;
 const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
-const API_BASE = "https://api.smartselenium.dev"; // update if you bind a different domain
+const API_BASE = "https://api.spectara.app"; // update if you bind a different domain
 
 // Two accepted formats:
 //   - Polar.sh UUID format issued by Polar's built-in license-keys feature

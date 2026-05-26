@@ -1,6 +1,6 @@
 <div align="center">
 
-# Smart Selenium Locator Generator
+# Spectara
 
 **A Chrome extension that captures any element on any webpage and instantly generates Selenium Java locators, code snippets, and Page Object Model classes.**
 
@@ -19,7 +19,7 @@
 
 Writing locators is the most thankless part of test automation. You inherit a flaky test suite, half the locators are `/div[3]/div[2]/span[1]`, the other half break when a designer changes a class name. You spend more time fixing locators than writing tests.
 
-**Smart Selenium Locator Generator** kills that friction. Click any element on any webpage. Get the best locator, ranked by stability, plus a ready-to-paste Selenium Java snippet and a generated Page Object Model class — in three seconds.
+**Spectara** kills that friction. Click any element on any webpage. Get the best locator, ranked by stability, plus a ready-to-paste Selenium Java snippet and a generated Page Object Model class — in three seconds.
 
 ---
 
@@ -68,12 +68,12 @@ Writing locators is the most thankless part of test automation. You inherit a fl
 
 1. Clone or download this repo:
    ```bash
-   git clone https://github.com/abdelrahmant-9/smart-selenium-locator-generator.git
+   git clone https://github.com/abdelrahmant-9/Spectara.git
    ```
 2. Open Chrome → `chrome://extensions`
 3. Toggle **Developer mode** (top right)
 4. Click **Load unpacked**
-5. Select the `smart-selenium-locator-generator/` folder
+5. Select the `Spectara/` folder
 6. Pin the extension icon to the toolbar
 
 > Chrome will not allow inspection on `chrome://`, `edge://`, or `about:` pages — open a regular website to test.
@@ -137,7 +137,7 @@ Some elements only exist after a hover or after another element is clicked open 
 ## Architecture
 
 ```
-smart-selenium-locator-generator/
+Spectara/
 ├── manifest.json              # Manifest V3 config
 ├── popup/
 │   ├── popup.html             # Two states: compact (empty) + expanded (results)
@@ -349,8 +349,8 @@ Issues and PRs welcome. For larger changes, open an issue first to discuss the a
 
 ```bash
 # Clone
-git clone https://github.com/abdelrahmant-9/smart-selenium-locator-generator.git
-cd smart-selenium-locator-generator
+git clone https://github.com/abdelrahmant-9/Spectara.git
+cd Spectara
 
 # Load into Chrome (no build step required)
 # chrome://extensions → Developer mode → Load unpacked → select folder

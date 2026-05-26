@@ -1,6 +1,6 @@
-# Smart Selenium — License API (Cloudflare Worker, Polar.sh)
+# Spectara — License API (Cloudflare Worker, Polar.sh)
 
-Tiny, dependency-free license-validation backend for the Smart Selenium Pro
+Tiny, dependency-free license-validation backend for the Spectara Pro
 tier. Free Chrome users never reach this code path — only users who paste a
 Polar-issued license key into the extension trigger one POST per 24 hours.
 
@@ -69,8 +69,8 @@ Unhandled events return `200` so Polar stops retrying.
 ### A. Polar dashboard
 
 1. Sign up at https://polar.sh (GitHub OAuth, instant).
-2. Create an organization (e.g. `smart-selenium`).
-3. **Products → New product** → "Smart Selenium Pro".
+2. Create an organization (e.g. `spectara`).
+3. **Products → New product** → "Spectara Pro".
 4. Add variants:
    - **Monthly** — $4.99 / month recurring
    - **Yearly** — $39 / year recurring

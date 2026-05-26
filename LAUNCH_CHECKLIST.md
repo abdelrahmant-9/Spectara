@@ -107,7 +107,7 @@ Run a clean install and verify each feature on at least one site:
 - [ ] Build the upload ZIP:
   ```bash
   cd /Users/abdelrahmantarek/smart-locator-generator
-  zip -r smart-selenium-v1.3.0.zip \
+  zip -r spectara-v1.3.0.zip \
     manifest.json \
     background/ \
     content/ \
@@ -124,7 +124,7 @@ Run a clean install and verify each feature on at least one site:
 ## 8. Chrome Web Store submission
 
 - [ ] Pay the **$5 one-time** developer fee at https://chrome.google.com/webstore/devconsole/
-- [ ] Click "New item" → upload `smart-selenium-v1.3.0.zip`
+- [ ] Click "New item" → upload `spectara-v1.3.0.zip`
 - [ ] **Store listing tab:**
   - [ ] Title from STORE_ASSETS.md §1
   - [ ] Short description from §2

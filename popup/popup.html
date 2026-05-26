@@ -2,7 +2,7 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
-  <title>Smart Selenium Locator Generator</title>
+  <title>Spectara</title>
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
@@ -13,7 +13,7 @@
       <div class="onboard-inner">
         <span class="onboard-emoji" aria-hidden="true">⚡</span>
         <div class="onboard-text">
-          <strong>Welcome to Smart Selenium.</strong>
+          <strong>Welcome to Spectara.</strong>
           Press <span class="kbd-mini" id="onboardShortcut">⌘⇧L</span> anywhere to open. Click <em>Start Inspect</em>, then click any element on the page.
         </div>
         <button class="onboard-close" id="onboardClose" aria-label="Dismiss">×</button>
@@ -42,7 +42,7 @@
             <line x1="16.2" y1="16.2" x2="22" y2="22" stroke="#e8eced" stroke-width="2.2" stroke-linecap="round"/>
           </svg>
         </div>
-        <h1>Smart Selenium</h1>
+        <h1>Spectara</h1>
         <p>Locator Generator · v1.0</p>
       </div>
 
@@ -76,7 +76,7 @@
         <div class="nav-title">
           <div class="nav-mark"></div>
           <div>
-            <h2>Smart Selenium</h2>
+            <h2>Spectara</h2>
             <span class="status-line" id="statusLine">
               <span class="dot dot-idle" id="statusDot"></span>
               <span id="statusText">Idle</span>
@@ -269,7 +269,7 @@
           <div class="pro-state" id="proUnlicensed">
             <div class="pro-hero-block">
               <div class="pro-hero-mark">★</div>
-              <h3 class="pro-hero-title">Smart Selenium Pro</h3>
+              <h3 class="pro-hero-title">Spectara Pro</h3>
               <p class="pro-hero-sub">Unlock advanced features for serious QA automation.</p>
             </div>
 
@@ -286,13 +286,15 @@
             </ul>
 
             <!-- Pricing tiles -->
-            <div class="price-tiles">
+            <!-- Pricing — monthly only at launch. Yearly tile reintroduced
+                 when a yearly Polar product is created. -->
+            <div class="price-tiles price-tiles-single">
               <button class="price-tile active" data-plan="monthly" id="planMonthly">
                 <div class="price-tile-label">Monthly</div>
                 <div class="price-tile-amount">$4.99<span>/mo</span></div>
-                <div class="price-tile-sub">Cancel anytime</div>
+                <div class="price-tile-sub">Cancel anytime · 14-day refund</div>
               </button>
-              <button class="price-tile" data-plan="yearly" id="planYearly">
+              <button class="price-tile hidden" data-plan="yearly" id="planYearly">
                 <div class="price-tile-badge">Save 35%</div>
                 <div class="price-tile-label">Yearly</div>
                 <div class="price-tile-amount">$39<span>/yr</span></div>
@@ -301,7 +303,7 @@
             </div>
 
             <button class="pill-btn pill-primary buy-btn" id="buyProBtn">
-              Buy Smart Selenium Pro · <span id="buyPriceLabel">$4.99/mo</span>
+              Buy Spectara Pro · <span id="buyPriceLabel">$4.99/mo</span>
             </button>
 
             <button class="pill-btn trial-btn" id="trialBtn">

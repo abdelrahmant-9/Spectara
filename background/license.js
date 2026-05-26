@@ -42,6 +42,7 @@ function isValidKeyFormat(k) {
 // the public source. Add more hashes for additional team members.
 const OWNER_KEY_HASHES = new Set([
   "dce468205185b9fa5bea136cda60ff8a36d87edd78b330afffe20652da2f8f4e",
+  "e71eab03d08d2fd9da32991a6acbfe6f13688262a51ca5d1bb669c3e413017b2",
 ]);
 
 async function sha256Hex(input) {

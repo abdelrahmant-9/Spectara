@@ -231,7 +231,16 @@ async function ensureContentScript(tabId) {
       });
       return true;
     } catch (err) {
-      console.error("Inject failed", err);
+      // Quiet expected failures on restricted pages (chrome://, Web Store,
+      // file://, view-source:, etc.). These surface as either:
+      //   - "The extensions gallery cannot be scripted"
+      //   - "Cannot access a chrome:// URL"
+      //   - "Cannot access contents of url ..."
+      // Log only true unexpected errors so the Chrome Errors panel stays
+      // clean in normal use.
+      const msg = String((err && err.message) || err || "");
+      const expected = /cannot be scripted|chrome:\/\/|Cannot access (?:a chrome|contents of)|chrome-extension:\/\/|chromewebstore/i.test(msg);
+      if (!expected) console.warn("[Spectara] inject failed:", msg);
       return false;
     }
   }
@@ -274,7 +283,9 @@ async function handleStart() {
   const tab = await getActiveTab();
   if (!tab || !tab.id) return;
 
-  if (tab.url && /^(chrome|edge|about|chrome-extension|view-source):/i.test(tab.url)) {
+  // activeTab permission hides chrome:// and similar URLs (tab.url comes
+  // back empty). Treat empty URL the same as a known-restricted prefix.
+  if (!tab.url || /^(chrome|edge|about|chrome-extension|view-source|file):/i.test(tab.url)) {
     const msg = "This page is a browser internal page (chrome://, edge://, etc.) and cannot be inspected. Open any normal website and try again.";
     if (!els.expandedView.classList.contains("hidden")) {
       setHint(msg, true);
